@@ -1,0 +1,11 @@
+<Vulnerability>
+	<Init>
+		<Name>FTPD</Name>
+		<Stages>2</Stages>
+		<WelcomeMess></WelcomeMess>
+		<Ports>
+			<Port>21</Port>
+		</Ports>
+		<DefaultReply>220 OK</DefaultReply>
+	</Init>
+</Vulnerability>

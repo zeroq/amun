@@ -1,0 +1,41 @@
+<Vulnerability>
+	<Init>
+		<Name>MS08067</Name>
+		<Stages>9</Stages>
+		<WelcomeMess></WelcomeMess>
+		<Ports>
+			<Port>445</Port>
+		</Ports>
+		<DefaultReply>random</DefaultReply>
+	</Init>
+	<Stages>
+		<Stage stage="1">
+			<ReadBytes>221</ReadBytes>
+			<Reply>\x00\x00\x00\x55\xff\x53\x4d\x42\x72\x00\x00\x00\x00\x98\x01\x28\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\xaa\x00\x00\xc6\xa3\x11\x03\x00\x03\x0a\x00\x01\x00\x04\x11\x00\x00\x00\x00\x01\x00\x00\x00\x00\x00\xfd\xe3\x00\x00\x67\xd9\x26\x46\xad\x3d\xc9\x01\xc4\xff\x00\x10\x00\xcf\x93\x98\x87\x52\x1d\x7c\x42\x9a\xed\x0f\x24\x73\xdb\x5c\x46</Reply>
+			<Request></Request>
+		</Stage>
+		<Stage stage="2">
+                        <ReadBytes>168</ReadBytes>
+                        <Reply></Reply>
+			<Request></Request>
+                </Stage>
+		<Stage stage="3">
+			<ReadBytes>222</ReadBytes>
+			<Reply></Reply>
+			<Request></Request>
+		</Stage>
+		<Stage stage="4">
+			<ReadBytes></ReadBytes>
+			<Reply></Reply>
+			<Request></Request>
+		</Stage>
+		<Stage stage="5">
+			<ReadBytes>104</ReadBytes>
+			<Request></Request>
+		</Stage>
+		<Stage stage="6">
+			<ReadBytes>160</ReadBytes>
+			<Request></Request>
+		</Stage>
+	</Stages>
+</Vulnerability>

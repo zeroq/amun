@@ -1,0 +1,10 @@
+<Vulnerability>
+	<Init>
+		<Name>TIVOLI</Name>
+		<Stages>0</Stages>
+		<WelcomeMess></WelcomeMess>
+		<Ports>
+			<Port>8080</Port>
+		</Ports>
+	</Init>
+</Vulnerability>

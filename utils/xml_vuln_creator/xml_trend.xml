@@ -1,0 +1,11 @@
+<Vulnerability>
+	<Init>
+		<Name>TREND_MICRO</Name>
+		<Stages>0</Stages>
+		<WelcomeMess></WelcomeMess>
+		<Ports>
+			<Port>5168</Port>
+		</Ports>
+		<DefaultReply>random</DefaultReply>
+	</Init>
+</Vulnerability>

@@ -1,0 +1,159 @@
+Changes in v0.2.1-devel
+	- added inital support for rdp vulnerability (not finished yet)
+	- added new bindport detection to mainz decoder
+	- added new unnamed bindport shellcode detection
+	- modified log_surfnet module thanks to Mr. Neijenhuis
+	- modified smb module disectWriteAndX
+	- fixed crash on none existing user to drop privileges
+	- minor change in error output of handle_read in amun_server.py
+
+Changes in v0.2.0:
+	- removed all port 445 and 139 vulnerability modules and added new smb vulnerability module
+	- fixed vuln-wins to work correctly
+	- fixed missing ownIP in vuln_creator
+	- fixed missing variable in amun_server
+	- fixed mydoom exploit not showing up in the logs
+	- modified vuln-trend bind reply
+	- modified vuln-msmq bind reply
+	- modified shellcode_manager to return multiple results with shellcommands
+	- modified ms08067 to handle different exploits
+	- modified vuln-http to handle iis exploits
+	- modified vuln_creator to handle multiple byte read commands
+	- modified reply bytes send method
+	- modified vuln-check logging to include ip
+	- added max open socket configuration
+	- added new bindshell detection
+	- added new connectback detection
+	- added new alphaupper decoder and bindshell detection
+	- added additional url regex
+
+Changes in v0.1.9:
+	- fixed wrong variable name in shellcode manager
+	- fixed ftp_download core to allow login without password
+	- modified plain ftp command shellcode detection
+	- modified shellcode managers multiple file handling
+	- modified furth shellcode decoder
+	- modified ftp_nat_ip config parameter to accept dns names as well
+	- modified match_plainFTP shellcode detector to accept decoded shellcode
+	- modified vuln-ms08067 vulnerability
+	- modified amun_smb_core
+	- modified vuln-maxdb to ignore BitTorrent protocol requests
+	- modified vuln-lsass to partly use amun_smb
+
+Changes in v0.1.8:
+	- added ulm shellcode handler
+	- added bergheim shellcode handler
+	- added langenfeld connectback2
+	- added leimbach encoded tftp command detection
+	- added pexalphanumeric b64encoded plain url detection
+	- added new amun smb handler
+	- fixed netdde vulnerability
+	- fixed missing socket import for log-blastomat module
+	- fixed reply function to send all bytes
+	- fixed amun crash on already used port/address
+	- fixed anubis submission module
+	- fixed amun ftp NAT download
+	- modified ftp_download_core to handle broken pipe on push command
+	- modified vuln-http to serve images from folder
+	- modified log-surfnet configuration to accept database port
+	- modified vuln-arc to no reply
+	- modified md5 to hashlib (deprecated warning)
+        - modified popen2 to subprocess (deprecated warning)
+	- removed conn= parameter prefix for asynchat.async_chat.__init__
+
+Changes in v0.1.7:
+	- added new bindshell detection
+	- added log-surfnet modul
+	- added amun sql layout amun_db.sql
+	- added vuln-ms08067 modul (milworm)
+	- added bielefeld encoded URL detection
+	- fixed linkbot dlident missing
+	- modified currentSockets to store attackerId for log-surfnet
+	- modified vuln-dcom to detect other exploit method
+	- modified vuln-http POST request shellcode size to 530
+	- modified download_core to handle errors
+
+Changes in v0.1.6:
+	- fixed submit-cwsandbox timeout issue
+	- fixed submit-cwsandbox result url parsing
+	- modified ftp download module
+	- modified for-loops in shellcodemanager
+	- modified range to xrange
+	- added submit-joebox module thanx to the author of joebox and lukas from glasblog
+	- added ipconfig command emulation
+
+Changes in v0.1.5:
+	- fixed reload config missing return value
+	- fixed connectback config_dict variable not global error
+	- added shellcode decoder for alpha2 zero tolerance shellcode
+	- added new vulnerability modul for HP OpenView exploit
+	- added submit-cwsandbox module
+	- modified remove bindport from list after sending local quit
+	- modified remove ftp data port from list after sending local quit
+
+Changes in v0.1.4:
+	- fixed ftp download module to send requests one by one
+	- fixed manual analysis option to work again after last update (missing parameter)
+	- added new vulnerability modul for Helix server v11.0.1 exploit
+	- modified ftp shellcode decoder to find all download files
+	- modified submit modules to python new-class style
+	- modified logfiles to rotate at midnight
+	- added blocking of successfull exploit ips
+	- added queue of last stored binaries to reduce disk io when checking for already stored files
+	- added initial stage to iis vulnerability
+	- moved broken download checking out of submit modules
+
+
+Changes in v0.1.3:
+	- fixed tftp download packet ACK reply to correct port
+	- fixed setting download identifier for tftp downloads
+	- fixed properly checking blocked hosts
+	- fixed double closing of bindports, http, connback, and ftp downloads
+	- added initial stage to tivoli vulnerability
+	- added drop privilege function to run as non-root user
+	- added extended logging option
+	- added new shellemulation class to handle bindport and connectbackshell
+	- added new logfile for shellemulator
+	- modified submission modules to receive notficiation if file already exists
+	- modified bindport to submit shellcode to shellcode manager
+
+
+Changes in v0.1.2:
+	- fixed delete existing connection function
+	- fixed amun_config_parser to parse empty variables and set to none
+	- fixed amun_config_parser to allow comment of modules with '#'
+	- added submit-anubis modul
+	- added different options for defining the ip(s) to bind to
+	- added nat ip option for ftp downloads
+	- added new plain ftp download regex found in symantec exploit
+	- added support for multiple file ftp downloads
+	- added change directory functionality for bindport and connectbackshell
+	- added change to working directory before startup
+	- added handle_expt() to bindport module
+	- modified default reply size to 64
+	- modified vuln modules which need bigger default reply size
+	- modified call of functions to provide all parameters
+	- modified handle_expt() in ftp_download from close to pass
+
+
+Changes in v0.1.1:
+	- fixed amun request handler to close finished connections
+	- fixed submit-md5 modul to write in binary mode
+	- fixed connectbackshell loading shellcodemanager correctly
+	- fixed connectbackshell replying with prompt
+	- fixed bindport replying with prompt
+	- fixed http download to accept few bytes if download already started
+	- added new unencrypted bindshellcode used to exploit the VERITAS vulnerability
+	- added new plain tftp download regex found in asn1 exploit
+	- added new vuln modul for port 2380
+	- added ftp port range configuration
+	- added debug option logging local ip exploits
+	- added new stage shellcode for vuln-pnp module
+	- added minimum shellcode size for vuln-upnp to avoid emule
+	- added logging module for syslog
+	- added utility for quick shellcode checking (checkCode.py)
+	- update regular expression ftp plaintext detection
+	- modified bindport socket close behaviour
+	- modified default timeout values in amun.conf
+	- modified error message for not connected transports
+	- modified http shellcode to allow urls without port

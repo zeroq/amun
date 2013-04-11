@@ -1,0 +1,11 @@
+<Vulnerability>
+	<Init>
+		<Name>BAGLE</Name>
+		<Stages>2</Stages>
+		<WelcomeMess></WelcomeMess>
+		<Ports>
+			<Port>2745</Port>
+		</Ports>
+		<DefaultReply>random</DefaultReply>
+	</Init>
+</Vulnerability>

@@ -1,0 +1,11 @@
+<Vulnerability>
+	<Init>
+		<Name>MERCURY</Name>
+		<Stages>0</Stages>
+		<WelcomeMess></WelcomeMess>
+		<Ports>
+			<Port>105</Port>
+		</Ports>
+		<DefaultReply>\x00</DefaultReply>
+	</Init>
+</Vulnerability>

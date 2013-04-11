@@ -1,0 +1,12 @@
+<Vulnerability>
+	<Init>
+		<Name>MSMQ</Name>
+		<Stages>1</Stages>
+		<WelcomeMess></WelcomeMess>
+		<Ports>
+			<Port>2103</Port>
+			<Port>2105</Port>
+			<Port>2107</Port>
+		</Ports>
+	</Init>
+</Vulnerability>

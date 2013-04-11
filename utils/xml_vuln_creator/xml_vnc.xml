@@ -1,0 +1,10 @@
+<Vulnerability>
+	<Init>
+		<Name>RealVNC</Name>
+		<Stages>4</Stages>
+		<WelcomeMess></WelcomeMess>
+		<Ports>
+			<Port>5900</Port>
+		</Ports>
+	</Init>
+</Vulnerability>

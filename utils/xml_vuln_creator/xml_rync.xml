@@ -1,0 +1,11 @@
+<Vulnerability>
+	<Init>
+		<Name>RSYNC</Name>
+		<Stages>0</Stages>
+		<WelcomeMess>Rsync:25</WelcomeMess>
+		<Ports>
+			<Port>873</Port>
+		</Ports>
+		<DefaultReply>random</DefaultReply>
+	</Init>
+</Vulnerability>

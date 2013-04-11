@@ -1,0 +1,11 @@
+<Vulnerability>
+	<Init>
+		<Name>MaxDB</Name>
+		<Stages>2</Stages>
+		<WelcomeMess></WelcomeMess>
+		<Ports>
+			<Port>9999</Port>
+		</Ports>
+		<DefaultReply>\x00</DefaultReply>
+	</Init>
+</Vulnerability>

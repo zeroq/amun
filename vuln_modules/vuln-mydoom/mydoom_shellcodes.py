@@ -1,0 +1,1 @@
+mydoom_request_stage1 = "\x85\x13\x3c\x9e\xa2"

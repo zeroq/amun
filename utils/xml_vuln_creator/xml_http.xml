@@ -1,0 +1,11 @@
+<Vulnerability>
+	<Init>
+		<Name>HTTP</Name>
+		<Stages>1</Stages>
+		<WelcomeMess></WelcomeMess>
+		<Ports>
+			<Port>80</Port>
+		</Ports>
+		<DefaultReply>\x00</DefaultReply>
+	</Init>
+</Vulnerability>

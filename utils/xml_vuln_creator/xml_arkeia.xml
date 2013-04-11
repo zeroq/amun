@@ -1,0 +1,11 @@
+<Vulnerability>
+	<Init>
+		<Name>ARKEIA</Name>
+		<Stages>1</Stages>
+		<WelcomeMess></WelcomeMess>
+		<Ports>
+			<Port>617</Port>
+		</Ports>
+		<DefaultReply>random</DefaultReply>
+	</Init>
+</Vulnerability>

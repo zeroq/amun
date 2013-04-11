@@ -1,4 +1,4 @@
-amun
+Amun
 ====
 
-Amun Honeypot
+Amun Python-based low-interaction Honeypot

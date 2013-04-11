@@ -1,0 +1,11 @@
+<Vulnerability>
+	<Init>
+		<Name>HELIX</Name>
+		<Stages>1</Stages>
+		<WelcomeMess></WelcomeMess>
+		<Ports>
+			<Port>554</Port>
+		</Ports>
+		<DefaultReply>random</DefaultReply>
+	</Init>
+</Vulnerability>

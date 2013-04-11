@@ -1,0 +1,10 @@
+<Vulnerability>
+	<Init>
+		<Name>SUB7</Name>
+		<Stages>3</Stages>
+		<WelcomeMess></WelcomeMess>
+		<Ports>
+			<Port>27347</Port>
+		</Ports>
+	</Init>
+</Vulnerability>

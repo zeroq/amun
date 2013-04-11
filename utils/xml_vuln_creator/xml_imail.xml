@@ -1,0 +1,11 @@
+<Vulnerability>
+	<Init>
+		<Name>IMAIL</Name>
+		<Stages>2</Stages>
+		<WelcomeMess>220 mail.example.com SMTP Amun Mailserver</WelcomeMess>
+		<Ports>
+			<Port>25</Port>
+		</Ports>
+		<DefaultReply>random</DefaultReply>
+	</Init>
+</Vulnerability>

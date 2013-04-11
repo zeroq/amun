@@ -1,0 +1,51 @@
+-- Amun: Installation Instructions --
+
+:: Requirements:
+    - Python >= 2.6
+    - (optional) Python Psyco (available at http://psyco.sourceforge.net/)
+    - (optional) MySQLdb if submit-mysql or log-mysql is used
+    - (optional) psycopg2 if log-surfnet is used
+
+:: Installation:
+    - change the amun.conf file to fit your needs (conf/amun.conf)
+        - set the ip address for amun to listen on (0.0.0.0 to listen on all)
+
+    - start the software with "./amun_server"
+    - stop the software with strg+c
+
+:: Max Open Files:
+    - To increase the maximum number of open files on Linux:
+        - echo "104854" > /proc/sys/fs/file-max
+	- ulimit -Hn 104854
+	- ulimit -n 104854
+    - To increase the maximum number of open files on BSD:
+    	- sysctl kern.maxfiles=104854
+	- ulimit -Hn 104854
+	- ulimit -n 104854
+
+:: Logging
+    - all logging information are stored in the "logs" directory
+
+    - amun_server.log
+        - contains general information, errors, and alive messages of the amun server
+    - amun_request_handler.log
+        - contains information about unknown exploits and not matched exploit stages
+    - analysis.log
+        - contains information about manual shellcode analysis (performed via the -a option)
+    - download.log
+        - contains information about all download modules (ftp, tftp, bindport, etc...)
+    - exploits.log
+        - contains information about all exploits that where triggert
+    - shellcode_manager.log
+        - contains information and errors of the shellcode manager
+    - submissions.log
+        - contains information about unique downloads
+    - successfull_downloads.log
+    	- contains information about all downloaded malware
+    - unknown_downloads.log
+    	- contains information about unknown download methods
+    - vulnerabilities.log
+    	- contains information about certain vulnerability modules
+
+:: Parameters
+    - amun can be executed with -a parameter to analyse a given file for known shellcode

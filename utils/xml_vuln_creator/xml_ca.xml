@@ -1,0 +1,11 @@
+<Vulnerability>
+	<Init>
+		<Name>CA</Name>
+		<Stages>0</Stages>
+		<WelcomeMess></WelcomeMess>
+		<Ports>
+			<Port>10203</Port>
+		</Ports>
+		<DefaultReply>random</DefaultReply>
+	</Init>
+</Vulnerability>
