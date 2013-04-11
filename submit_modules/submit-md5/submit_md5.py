@@ -15,6 +15,7 @@ try:
 except ImportError:
 	pass
 
+import os
 import amun_logging
 
 # 69 6c 6c 65  67 61 6c 20 54 46 54 50 20 6f 70 65 72 61 74 69  6f 6e 2e 00
@@ -25,6 +26,8 @@ class submit(object):
 	def __init__(self):
 		try:
 			self.submit_name = "Submit MD5"
+			if not os.path.exists('malware/md5sum'):
+				os.makedirs('malware/md5sum')
 		except KeyboardInterrupt:
 			raise
 
