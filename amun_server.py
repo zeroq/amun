@@ -768,6 +768,22 @@ def checkServers(serverList, vuln_modules, divLogger, amunServerIPList, currentS
 	else:
 		return serverList,vuln_modules,refused_blocktime,connection_timeout,bindport_timeout,ftp_timeout,tftp_retransmissions,timeout_blocktime,sucdown_blocktime,sucexpl_blocktime
 
+def createLogFile(logfilename, shortname):
+	"""
+	description: universal function to create logfiles
+	@logfilename: filename of the log to create
+	@shortname: a two character abbreviation
+	returns: logger instance
+	"""
+	logfile = "logs/%s" % (logfilename)
+	nLogger = logging.getLogger("amun-%s" % (shortname))
+	hdlr = logging.handlers.TimedRotatingFileHandler(logfile, 'midnight')
+	formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
+	hdlr.setFormatter(formatter)
+	nLogger.addHandler(hdlr)
+	nLogger.setLevel(10)
+	return nLogger
+
 def createUnknownDownloadLogFile():
 	### create unknown download logfile
 	logfile = "logs/unknown_downloads.log"
@@ -958,9 +974,9 @@ def runMain():
 	submit_modules = readSubmitModules(config)
 	log_modules = readLogModules(config)
 	### create download logfile
-	dlLogger = createDownloadLogFile()
+	dlLogger = createLogFile("download.log", "dl")
 	### create unknown download logfile
-	ukLogger = createUnknownDownloadLogFile()
+	ukLogger = createLogFile("unknown_downloads.log", "ud")
 	### create successfull download logfile
 	suLogger = createSucDownloadLogFile()
 	### create exploit logfile
