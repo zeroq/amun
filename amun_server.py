@@ -768,7 +768,7 @@ def checkServers(serverList, vuln_modules, divLogger, amunServerIPList, currentS
 	else:
 		return serverList,vuln_modules,refused_blocktime,connection_timeout,bindport_timeout,ftp_timeout,tftp_retransmissions,timeout_blocktime,sucdown_blocktime,sucexpl_blocktime
 
-def createLogFile(logfilename, shortname):
+def createLogFile(logfilename, shortname, rotate=True, level=10):
 	"""
 	description: universal function to create logfiles
 	@logfilename: filename of the log to create
@@ -777,133 +777,15 @@ def createLogFile(logfilename, shortname):
 	"""
 	logfile = "logs/%s" % (logfilename)
 	nLogger = logging.getLogger("amun-%s" % (shortname))
-	hdlr = logging.handlers.TimedRotatingFileHandler(logfile, 'midnight')
+	if rotate:
+		hdlr = logging.handlers.TimedRotatingFileHandler(logfile, 'midnight')
+	else:
+		hdlr = logging.FileHandler(logfile)
 	formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
 	hdlr.setFormatter(formatter)
 	nLogger.addHandler(hdlr)
-	nLogger.setLevel(10)
+	nLogger.setLevel(level)
 	return nLogger
-
-def createSucDownloadLogFile():
-	### create successfull download logfile
-	logfile = "logs/successfull_downloads.log"
-	suLogger = logging.getLogger("amun-su")
-	hdlr = logging.handlers.TimedRotatingFileHandler(logfile, 'midnight')
-	formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
-	hdlr.setFormatter(formatter)
-	suLogger.addHandler(hdlr)
-	suLogger.setLevel(10)
-	return suLogger
-
-def createExploitLogFile():
-	### create exploit logfile
-	logfile = "logs/exploits.log"
-	exLogger = logging.getLogger("amun-ex")
-	hdlr = logging.handlers.TimedRotatingFileHandler(logfile, 'midnight')
-	formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
-	hdlr.setFormatter(formatter)
-	exLogger.addHandler(hdlr)
-	exLogger.setLevel(10)
-	return exLogger
-
-def createSubmitLogFile():
-	### create submit logfile
-	logfile = "logs/submissions.log"
-	smLogger = logging.getLogger("amun-sm")
-	hdlr = logging.handlers.TimedRotatingFileHandler(logfile, 'midnight')
-	formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
-	hdlr.setFormatter(formatter)
-	smLogger.addHandler(hdlr)
-	smLogger.setLevel(10)
-	return smLogger
-
-def createLoggingLogFile():
-	### create log logfile
-	logfile = "logs/logging.log"
-	loLogger = logging.getLogger("amun-lo")
-	hdlr = logging.handlers.TimedRotatingFileHandler(logfile, 'midnight')
-	formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
-	hdlr.setFormatter(formatter)
-	loLogger.addHandler(hdlr)
-	loLogger.setLevel(10)
-	return loLogger
-
-def createAmunServerLogFile():
-	### create amun server logfile
-	logfile = "logs/amun_server.log"
-	asLogger = logging.getLogger("amun-as")
-	hdlr = logging.handlers.TimedRotatingFileHandler(logfile, 'midnight')
-	formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
-	hdlr.setFormatter(formatter)
-	asLogger.addHandler(hdlr)
-	asLogger.setLevel(10)
-	return asLogger
-
-def createVulnLogFile():
-	### create vulnerabilities logfile
-	logfile = "logs/vulnerabilities.log"
-	vuLogger = logging.getLogger("amun-vu")
-	hdlr = logging.handlers.TimedRotatingFileHandler(logfile, 'midnight')
-	formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
-	hdlr.setFormatter(formatter)
-	vuLogger.addHandler(hdlr)
-	vuLogger.setLevel(10)
-	return vuLogger
-
-def createShellcodeLogFile():
-	### create shellcode manager logfile
-	logfile = "logs/shellcode_manager.log"
-	shLogger = logging.getLogger("amun-sh")
-	hdlr = logging.handlers.TimedRotatingFileHandler(logfile, 'midnight')
-	formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
-	hdlr.setFormatter(formatter)
-	shLogger.addHandler(hdlr)
-	shLogger.setLevel(10)
-	return shLogger
-
-def createRequestHandlerLogFile():
-	### create amun request handler logfile
-	logfile = "logs/amun_request_handler.log"
-	arLogger = logging.getLogger("amun-ar")
-	hdlr = logging.handlers.TimedRotatingFileHandler(logfile, 'midnight')
-	formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
-	hdlr.setFormatter(formatter)
-	arLogger.addHandler(hdlr)
-	arLogger.setLevel(10)
-	return arLogger
-
-def createDownloadLogFile():
-	### create download logfile
-	logfile = "logs/download.log"
-	dlLogger = logging.getLogger("amun-dl")
-	hdlr = logging.handlers.TimedRotatingFileHandler(logfile, 'midnight')
-	formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
-	hdlr.setFormatter(formatter)
-	dlLogger.addHandler(hdlr)
-	dlLogger.setLevel(10)
-	return dlLogger
-
-def createShellemuLogFile():
-	### create shellemulation logfile
-	logfile = "logs/shellemulator.log"
-	emuLogger = logging.getLogger("amun-emu")
-	hdlr = logging.handlers.TimedRotatingFileHandler(logfile, 'midnight')
-	formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
-	hdlr.setFormatter(formatter)
-	emuLogger.addHandler(hdlr)
-	emuLogger.setLevel(10)
-	return emuLogger
-
-def createAnalysisLogFile():
-	### create analysis logfile
-	logfile = "logs/analysis.log"
-	alLogger = logging.getLogger("amun-al")
-	hdlr = logging.handlers.TimedRotatingFileHandler(logfile, 'midnight')
-	formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
-	hdlr.setFormatter(formatter)
-	alLogger.addHandler(hdlr)
-	alLogger.setLevel(10)
-	return alLogger
 
 def runMain():
 	### check for garbage collector
@@ -967,23 +849,23 @@ def runMain():
 	### create unknown download logfile
 	ukLogger = createLogFile("unknown_downloads.log", "ud")
 	### create successfull download logfile
-	suLogger = createSucDownloadLogFile()
+	suLogger = createLogFile("successfull_downloads.log", "su")
 	### create exploit logfile
-	exLogger = createExploitLogFile()
+	exLogger = createLogFile("exploits.log", "ex")
 	### create amun server logfile
-	asLogger = createAmunServerLogFile()
+	asLogger = createLogFile("amun_server.log", "as")
 	### create amun request handler logfile
-	arLogger = createRequestHandlerLogFile()
+	arLogger = createLogFile("amun_request_handler.log", "ar")
 	### create shellcode manager logfile
-	shLogger = createShellcodeLogFile()
+	shLogger = createLogFile("shellcode_manager.log", "sh")
 	### create vulnerabilities logfile
-	vuLogger = createVulnLogFile()
+	vuLogger = createLogFile("vulnerabilities.log", "vu")
 	### create submission logfile
-	smLogger = createSubmitLogFile()
+	smLogger = createLogFile("submissions.log", "sm")
 	### create logging logfile
-	loLogger = createLoggingLogFile()
+	loLogger = createLogFile("logging.log", 'lo')
 	### create shellemulator logfile
-	emuLogger = createShellemuLogFile()
+	emuLogger = createLogFile("shellemulator.log", "emu")
 	### create Socket and Download Dicts
 	currentSockets = {}
 	currentDownloads = {}
@@ -1229,7 +1111,7 @@ def runAnalysis(filename, shellcmd):
 			file_content = "".join(fp.readlines())
 			fp.close()
 			log("done reading file ... starting analysis", 0, "info", None, True)
-			alLogger = createAnalysisLogFile()
+			alLogger = createLogFile("analysis.log", "al")
 			shellcode_manager = shellcode_mgr_core.shell_mgr(decodersDict, alLogger, config_dict)
 			shellcodeSet = {}
 			shellcodeSet['vulnname'] = "FileCheck"
