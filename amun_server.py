@@ -802,6 +802,11 @@ def runMain():
 	newUser = config.getSingleValue("user")
 	newGroup = config.getSingleValue("group")
 
+	### read log directory from config and create if not exists
+	logdir = config.getSingleValue("logdir")
+	if not os.path.exists(logdir):
+		os.makedirs(logdir)
+
 	connection_timeout = int(config.getSingleValue("connection_timeout"))
 	bindport_timeout = int(config.getSingleValue("bindport_timeout"))
 	ftp_timeout = int(config.getSingleValue("ftp_timeout"))
