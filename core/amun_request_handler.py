@@ -43,8 +43,6 @@ class amun_reqhandler(asynchat.async_chat):
 		self.in_buffer_size = 1024
 		self.in_buffer = ""
 		self.out_buffer = ""
-		#self.ac_in_buffer_size = 1024
-		#self.ac_out_buffer_size = 1024
 		self.connected = True
 		self.set_terminator(None)
 		### FIXME: configuration file
@@ -61,7 +59,7 @@ class amun_reqhandler(asynchat.async_chat):
 
 	def __del__(self):
 		pass
-	
+
 	def __str__(self):
 		return "      .::[Amun - ReqHandler] handling connection %s:%s --> %s:%s (%s) ::."\
 				% (self.remote_ip,self.remote_port,self.own_ip,self.own_port,self.identifier)
@@ -251,21 +249,11 @@ class amun_reqhandler(asynchat.async_chat):
 	def found_terminator(self):
 		pass
 
-	#def readable(self):
-	#	return (len(self.ac_in_buffer) <= self.ac_in_buffer_size)
-
-	#def writable(self):
-	#	return len(self.ac_out_buffer) or len(self.producer_fifo) or (not self.connected)
-
 	def handle_expt(self):
 		### out of band data can be ignored
 		pass
 
 	def handle_error(self):
-		#self.log_obj.log("handle_error", 0, "crit", True, True)
-		#f = StringIO.StringIO()
-		#traceback.print_exc(file=f)
-		#self.log_obj.log(f.getvalue(), 0, "crit", True, True)
 		raise
 
 	def handle_read(self):
@@ -285,7 +273,7 @@ class amun_reqhandler(asynchat.async_chat):
 	def collect_incoming_data(self, data):
 		try:
 			### proxy/mirror
-			### TODO: auslagern in extra function, spart code redundanz
+			### TODO: move to extra function to avoid redundancy
 			if self.enableProxy and self.proxyMode:
 				self.proxyShellcode.append(data)
 				self.proxyRequests.append(data)
@@ -370,7 +358,6 @@ class amun_reqhandler(asynchat.async_chat):
 							raise
 				self.out_buffer = ""
 				self.sendRequest = ""
-				#return
 
 			event_item = None
 			if self.currentConnections.has_key(self.identifier):
@@ -478,12 +465,12 @@ class amun_reqhandler(asynchat.async_chat):
 			except:
 				pass
 			### TODO: proxy unknown attack to high-interaction honeypot
-			### Problem: Kann nur weiterleiten wenn noch keine andere Stage durchlaufen wurde, alles STAGE1
-			### Moegliche Loesung: Mitschneiden des Verkehrs und anschliessendes Replay gegen Proxy (viel speicher bedarf)
-			### TODO: vuln-proxy modul um Ports zu registrieren die man ueberwachen will
-			### TODO: lesen und speichern des verkehrs und erstellung des XML files
-			### TODO: jeder request muss an den shellcode manager gehen und wenn der true liefert dann schwachstelle bauen
-			###       noetig: shellode und vulnerability name in dict vulnResult
+			### Problem: can only be done if no previous stage was used, i.e. still at STAGE1
+			### possible solution: record network traffic and replay against Proxy (needs memory/disc space)
+			### TODO: vuln-proxy modul to register ports for monitoring and proxying to other system
+			### TODO: read and store network traffic and generate vulnerability from this data
+			### TODO: every request needs to be run thru the shellcode manager and if shellcode detected then vulnerability modul is finished
+			###       requires: shellcode and vulnerability name in dict vulnResult
 			try:
 				if len(result['stage_list'])>0:
 					for entry in result['stage_list']:
@@ -499,7 +486,6 @@ class amun_reqhandler(asynchat.async_chat):
 				### FIXME: configuration: mirror, proxy, none
 				### open socket to honeypot system or remote attacker
 				proxyConnResult = self.setup_remote_connection(self.remote_ip)
-				#proxyConnResult = self.setup_remote_connection()
 				if not proxyConnResult:
 					return
 				self.log_obj.log("no module switching to proxy mode %s<->%s<->%s" % (self.remote_ip, self.own_ip, self.proxytoIP), 6, "debug", False, True)
@@ -525,7 +511,6 @@ class amun_reqhandler(asynchat.async_chat):
 						self.log_obj.log("received %s bytes from proxy" % (len(self.out_buffer)), 6, "debug", False, True)
 						self.proxyReplies.append(self.out_buffer)
 						if len(self.out_buffer)<1024 and len(self.out_buffer)!=0:
-							#self.push(self.out_buffer)
 							try:
 								bytesTosend = len(self.out_buffer)
 								while bytesTosend>0:
@@ -640,7 +625,6 @@ class amun_reqhandler(asynchat.async_chat):
 					self.log_obj.log("%s leaving communication (stage: %s bytes: %s)" % (vulnResult['vulnname'],vulnResult['stage'],len(data)), 6, "debug", False, False)
 					result['stage_list'].append(vulnResult['stage'])
 					keysToRemove.append(key)
-					#del vuln_modulList[key]
 				else:
 					### if result true and we have a reply -> send reply
 					if vulnResult['result'] and vulnResult['reply']!="None":
@@ -650,7 +634,6 @@ class amun_reqhandler(asynchat.async_chat):
 							rplmess = "%s" % (vulnResult['reply'][:-1])
 						else:
 							rplmess = "%s\r\n" % (vulnResult['reply'])
-						#print [rplmess]
 						if rplmess not in result['replies']:
 							result['replies'].append(rplmess)
 					### if result false, shellcode present and not a direct file -> run shellcode manager
@@ -723,8 +706,6 @@ class amun_reqhandler(asynchat.async_chat):
 
 	def handle_download(self, result):
 		### attach to download events
-		#if not self.event_dict['download'].has_key(self.identifier):
-		#	self.event_dict['download'][self.identifier] = result
 		if not self.event_dict['download'].has_key(result['dlident']):
 			self.event_dict['download'][result['dlident']] = result
 

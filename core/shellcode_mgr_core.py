@@ -55,7 +55,7 @@ class shell_mgr:
 		self.tftpExpre = decodersDict['tftp']
 		self.ftpcmdExpre = decodersDict['ftpcmd']
 		self.ftpcmd2Expre = decodersDict['ftpcmd2']
-		
+
 		self.ftpcmd3IPExpre = decodersDict['ftpcmd3ip']
 		self.ftpcmd3UserPassExpre = decodersDict['ftpcmd3userpass']
 		self.ftpcmd3BinExpre = decodersDict['ftpcmd3binary']
@@ -63,7 +63,7 @@ class shell_mgr:
 		### Match different Shellcodes
 		### NEW:
 		self.decodersDict = decodersDict
-		### FIXME: merge later
+		### FIXME: merge to use only dictionary
 		self.rothenburg = decodersDict['rothenburg']
 		self.rothenburg_bindport = decodersDict['rothenburg_bindport']
 		self.rothenburg_bindport2 = decodersDict['rothenburg_bindport2']
@@ -72,8 +72,6 @@ class shell_mgr:
 
 		self.adenau  = decodersDict['adenau']
 		self.adenau_bindport = decodersDict['adenau_bindport']
-		
-		self.heidelberg = decodersDict['heidelberg']
 
 		self.mainz = decodersDict['mainz']
 		self.mainz_bindport1 = decodersDict['mainz_bindport1']
@@ -132,7 +130,7 @@ class shell_mgr:
 
 		self.siegburg = decodersDict['siegburg']
 		self.siegburg_bindshell = decodersDict['siegburg_bindshell']
-		
+
 		self.ulm = decodersDict['ulm']
 		self.ulm_bindshell = decodersDict['ulm_bindshell']
 		self.ulm_bindshell2 = decodersDict['ulm_bindshell2']
@@ -177,7 +175,6 @@ class shell_mgr:
 		try:
 			self.shellcode = str(vulnResult['shellcode']).replace('\0','').strip()
 			self.shellcode2 = str(vulnResult['shellcode']).strip()
-			#self.shellcode = vulnResult['shellcode']
 			self.attIP = attIP
 			self.ownIP = ownIP
 			self.replace_locals = replace_locals
@@ -226,12 +223,10 @@ class shell_mgr:
 			self.overallResults = []
 			self.resultSet = self.getNewResultSet(vulnResult['vulnname'], attIP, ownIP)
 
-			### erst http url checken
+			### first check http url
 			http_result = self.match_url("None")
 			if http_result==1 and self.resultSet['result']:
 				self.overallResults.append(self.resultSet)
-			#self.resultSet = self.getNewResultSet(vulnResult['vulnname'], attIP, ownIP)
-			#self.shellcode = str(vulnResult['shellcode']).strip()
 			### url matched but incomplete
 			if http_result==2:
 				self.overallResults.append(self.resultSet)
@@ -281,7 +276,6 @@ class shell_mgr:
 		if cmd.startswith('cmd /c echo open'):
 			cmd_liste = cmd.split(' ')
 			target_ip = cmd_liste[4]
-			#if self.replace_locals:
 			match = self.checkIPExpre.search(target_ip)
 			if match:
 				local = self.check_local(target_ip)
@@ -443,7 +437,7 @@ class shell_mgr:
 			if self.displayShellCode:
 				print "starting Heidelberg matching ..."
 				sys.stdout.flush()
-			match = self.heidelberg.search( self.shellcode )
+			match = self.decodersDict['heidelberg'].search( self.shellcode )
 			if match:
 				#self.write_hexdump(self.shellcode, "heidelberg")
 				key = struct.unpack('B',match.groups()[0])[0]
@@ -1047,7 +1041,7 @@ class shell_mgr:
 			return True
 		else:
 			return False
-	
+
 	def handle_bergheim(self, key, dec_shellcode):
 		m = False
 		### bergheim ConnectBack Shellcode
@@ -1075,8 +1069,8 @@ class shell_mgr:
 			self.resultSet['shellcodeName'] = "bergheim"
 			return True
 		return False
-			
-	
+
+
 	def handle_langenfeld(self, key, dec_shellcode):
 		m = False
 		### langenfeld ConnectBack Shellcode

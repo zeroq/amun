@@ -29,7 +29,6 @@ import shellcode_mgr_core
 
 class req_handler(asynchat.async_chat):
 	def __init__(self, divLogger, config_dict, decodersDict):
-		#self.buffer = ''
 		self.shellcmds = []
 		self.bindport_closed = False
 		self.divLogger = divLogger
@@ -114,17 +113,6 @@ class req_handler(asynchat.async_chat):
 
 	def handle_expt(self):
 		pass
-
-	#def writeable(self):
-	#	return (len(self.buffer) > 0)
-
-	#def handle_write(self):
-	#	try:
-	#		if len(self.buffer)>1:
-	#			sent = self.sendto(self.buffer, self._address)
-	#			self.buffer = self.buffer[sent:]
-	#	except KeyboardInterrupt:
-	#		raise
 
 	def handle_close(self):
 		if not self.bindport_closed:

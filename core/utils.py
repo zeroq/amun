@@ -80,8 +80,6 @@ class utilities(object):
 		stopIP = rangeStr[1]
 		curIP = startIP
 		curIPSplitted = map(int, curIP.split('.'))
-		#for i in range(0,4):
-		#	curIPSplitted[i] = int(curIPSplitted[i])
 		invalid = False
 		self.resultIPlist.append(curIP)
 		while curIP!=stopIP and not invalid:

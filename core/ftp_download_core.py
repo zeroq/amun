@@ -58,7 +58,7 @@ class req_handler(asynchat.async_chat):
 		if not self.currentSockets.has_key(self.identifier):
 			socket_item = (int(time.time()), self.socket)
 			self.currentSockets[self.identifier] = socket_item
-	
+
 	def handle_read(self):
 		try:
 			bytes = self.recv(8192)
@@ -328,7 +328,7 @@ class download_ftp(asynchat.async_chat):
 		self.data += data
 
 	def found_terminator(self):
-		# collect response
+		### collect response
 		data = self.data
 		if data.endswith("\r"):
 			data = data[:-1]
@@ -341,7 +341,7 @@ class download_ftp(asynchat.async_chat):
 		for line in response:
 			self.log_obj.log("Server Response: %s" % (line), 6, "debug", True, False)
 
-		# process response
+		### process response
 		if self.handler:
 			handler = self.handler
 			self.handler = None

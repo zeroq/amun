@@ -20,7 +20,7 @@ class vulngenerator:
 	def __init__(self):
 		self.receivedData = []
 		self.replyData = []
-		### eventuell hash aus der ersten Stage?
+		### maybe hash from first stage?
 		self.vulnName = None
 		self.stages = 0
 		self.welcomeMessage = None

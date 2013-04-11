@@ -41,7 +41,7 @@ class tftp(asyncore.dispatcher):
 			self.complete = True
 		else:
 			self.complete = False
-		
+
 		### send buffer
 		self.buffer = ''
 		self.max_retries = config_dict['tftp_max_retransmissions']
@@ -60,7 +60,6 @@ class tftp(asyncore.dispatcher):
 			self.log_obj.log("UDP Port busy: %i" % (udp_port), 6, "crit", True, True)
 			self.handle_close()
 			return
-		#self.settimeout(5.0)
 		self.set_reuse_addr()
 
 		### current block to ack

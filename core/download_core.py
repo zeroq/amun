@@ -319,13 +319,12 @@ class download_connectback(asyncore.dispatcher):
 		self.log_obj.log(f.getvalue(), 0, "crit", True, True)
 		self.close()
 		sys.exit(1)
-		#raise
 
 	def createFileEvent(self, file_data, file_data_length):
 		event_item = (file_data_length, self._address[0], self._address[1], self.victimIP, "ConnBack", file_data, self.vulnName, self.downURL)
 		id = "%s%s" % (self._address[0].replace('.',''), self._address[1])
 		self.event_dict['successfull_downloads'][id] = event_item
-	
+
 	def handle_close(self):
 		if not self.connection_closed:
 			try:
