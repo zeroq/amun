@@ -784,17 +784,6 @@ def createLogFile(logfilename, shortname):
 	nLogger.setLevel(10)
 	return nLogger
 
-def createUnknownDownloadLogFile():
-	### create unknown download logfile
-	logfile = "logs/unknown_downloads.log"
-	ukLogger = logging.getLogger("amun-ud")
-	hdlr = logging.handlers.TimedRotatingFileHandler(logfile, 'midnight')
-	formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
-	hdlr.setFormatter(formatter)
-	ukLogger.addHandler(hdlr)
-	ukLogger.setLevel(10)
-	return ukLogger
-
 def createSucDownloadLogFile():
 	### create successfull download logfile
 	logfile = "logs/successfull_downloads.log"
