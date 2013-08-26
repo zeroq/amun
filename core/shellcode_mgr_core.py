@@ -64,24 +64,12 @@ class shell_mgr:
 		### NEW:
 		self.decodersDict = decodersDict
 		### FIXME: merge to use only dictionary
-		self.rothenburg = decodersDict['rothenburg']
-		self.rothenburg_bindport = decodersDict['rothenburg_bindport']
-		self.rothenburg_bindport2 = decodersDict['rothenburg_bindport2']
-		self.schoenborn_connback = decodersDict['schoenborn_connback']
-		self.schoenborn_bindport = decodersDict['schoenborn_bindport']
-
-		self.adenau  = decodersDict['adenau']
-		self.adenau_bindport = decodersDict['adenau_bindport']
-
 		self.mainz = decodersDict['mainz']
 		self.mainz_bindport1 = decodersDict['mainz_bindport1']
 		self.mainz_bindport2 = decodersDict['mainz_bindport2']
 		self.mainz_connback1 = decodersDict['mainz_connback1']
 		self.mainz_connback2 = decodersDict['mainz_connback2']
 		self.mainz_connback3 = decodersDict['mainz_connback3']
-
-		self.wuerzburg = decodersDict['wuerzburg']
-		self.wuerzburg_file = decodersDict['wuerzburg_file']
 
 		self.aachen = decodersDict['aachen']
 		self.aachen_connback = decodersDict['aachen_connback']
@@ -307,7 +295,7 @@ class shell_mgr:
 			if self.displayShellCode:
 				print "starting Wuerzburg matching ..."
 				sys.stdout.flush()
-			match = self.wuerzburg.search( self.shellcode )
+			match = self.decodersDict['wuerzburg'].search( self.shellcode )
 			if match:
 				#self.write_hexdump(self.shellcode, "wuerzburg")
 				raw_port = match.groups()[0]
@@ -360,7 +348,7 @@ class shell_mgr:
 			if self.displayShellCode:
 				print "starting Adenau matching ..."
 				sys.stdout.flush()
-			match = self.adenau.search( self.shellcode )
+			match = self.decodersDict['adenau'].search( self.shellcode )
 			if match:
 				#self.write_hexdump(self.shellcode, "adenau")
 				keys = {}
@@ -451,7 +439,7 @@ class shell_mgr:
 			if self.displayShellCode:
 				print "starting Rothenburg / Schoenborn matching ..."
 				sys.stdout.flush()
-			match = self.rothenburg.search( self.shellcode )
+			match = self.decodersDict['rothenburg'].search( self.shellcode )
 			if match:
 				#self.write_hexdump(self.shellcode, "rothenburg")
 				keys = {}
@@ -1010,7 +998,7 @@ class shell_mgr:
 		m = False
 		filename = "None"
 		dec_shellcode = self.decrypt_xor(key, self.shellcode)
-		m = self.wuerzburg_file.search( dec_shellcode )
+		m = self.decodersDict['wuerzburg_file'].search( dec_shellcode )
 		if m:
 			filename = str(m.groups()[0]).replace('\\','')
 		return filename
@@ -1304,8 +1292,8 @@ class shell_mgr:
 		while i<=len(keys):
 			dec_shellcode = self.decrypt_multi_xor(keys, self.shellcode, i)
 			dec_shellcode2 = self.decrypt_multi_xor(keys, self.shellcode2, i)
-			m1 = self.adenau_bindport.search( dec_shellcode )
-			m2 = self.adenau_bindport.search( dec_shellcode2 )
+			m1 = self.decodersDict['adenau_bindport'].search( dec_shellcode )
+			m2 = self.decodersDict['adenau_bindport'].search( dec_shellcode2 )
 			if m1 or m2:
 				break
 			i += 1
@@ -1347,10 +1335,10 @@ class shell_mgr:
 		while i<=len(keys):
 			dec_shellcode = self.decrypt_multi_xor(keys, self.shellcode, i)
 			#self.write_hexdump(dec_shellcode, "unknown")
-			m1 = self.rothenburg_bindport.search( dec_shellcode )
-			m2 = self.schoenborn_connback.search( dec_shellcode )
-			m3 = self.rothenburg_bindport2.search( dec_shellcode )
-			m4 = self.schoenborn_bindport.search( dec_shellcode )
+			m1 = self.decodersDict['rothenburg_bindport'].search( dec_shellcode )
+			m2 = self.decodersDict['schoenborn_connback'].search( dec_shellcode )
+			m3 = self.decodersDict['rothenburg_bindport2'].search( dec_shellcode )
+			m4 = self.decodersDict['schoenborn_bindport'].search( dec_shellcode )
 			m5 = self.decodersDict['schoenborn_connback2'].search( dec_shellcode )
 			if m1 or m2 or m3 or m4 or m5:
 				break
