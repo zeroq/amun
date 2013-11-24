@@ -11,8 +11,8 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 You should have received a copy of the GNU General Public License along with this program; if not, see <http://www.gnu.org/licenses/>
 """
 
-__author__ = "jan goebel"
-__version__ = "0.2.1-devel"
+__author__ = "jan goebel <goebel@pi-one.net>"
+__version__ = "0.2.2-devel"
 
 try:
 	import psyco ; psyco.full()

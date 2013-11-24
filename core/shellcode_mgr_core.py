@@ -46,99 +46,8 @@ class shell_mgr:
 		self.localIPliste.append( iprange.IPRange("192.168.0.0/16") )
 		### logging
 		self.log_obj = amun_logging.amun_logging("shellcode_manager", shLogger)
-		### compile the regex
-		### check IP
-		self.checkIPExpre = decodersDict['checkIP']
-		### match URLs (http|https|ftp)
-		self.urlExpre = decodersDict['url']
-		self.tftpExpre1 = decodersDict['tftp1']
-		self.tftpExpre = decodersDict['tftp']
-		self.ftpcmdExpre = decodersDict['ftpcmd']
-		self.ftpcmd2Expre = decodersDict['ftpcmd2']
-
-		self.ftpcmd3IPExpre = decodersDict['ftpcmd3ip']
-		self.ftpcmd3UserPassExpre = decodersDict['ftpcmd3userpass']
-		self.ftpcmd3BinExpre = decodersDict['ftpcmd3binary']
-
-		### Match different Shellcodes
-		### NEW:
+		### load shellcodes
 		self.decodersDict = decodersDict
-		### FIXME: merge to use only dictionary
-		self.mainz = decodersDict['mainz']
-		self.mainz_bindport1 = decodersDict['mainz_bindport1']
-		self.mainz_bindport2 = decodersDict['mainz_bindport2']
-		self.mainz_connback1 = decodersDict['mainz_connback1']
-		self.mainz_connback2 = decodersDict['mainz_connback2']
-		self.mainz_connback3 = decodersDict['mainz_connback3']
-
-		self.aachen = decodersDict['aachen']
-		self.aachen_connback = decodersDict['aachen_connback']
-
-		self.schauenburg = decodersDict['schauenburg']
-		self.schauenburg_bindport = decodersDict['schauenburg_bindport']
-		self.schauenburg_connback = decodersDict['schauenburg_connback']
-
-		self.koeln = decodersDict['koeln']
-		self.koeln_bindport = decodersDict['koeln_bindport']
-
-		self.lichtenfels = decodersDict['lichtenfels']
-		self.lichtenfels_connback = decodersDict['lichtenfels_connback']
-
-		self.leimbach = decodersDict['leimbach']
-		self.berlin = decodersDict['berlin']
-
-		self.linkbot = decodersDict['linkbot']
-		self.linkbot_connback = decodersDict['linkbot_connback']
-		self.linkbot_connback2 = decodersDict['linkbot_connback2']
-		self.linkbot_connback3 = decodersDict['linkbot_connback3']
-
-		self.furth = decodersDict['furth']
-
-		self.pexalphanum = decodersDict['pexalphanum']
-		self.pexalphanum_bindport = decodersDict['pexalphanum_bindport']
-
-		self.alphaNum = decodersDict['alphaNum']
-		self.alphaNum2 = decodersDict['alphaNum2']
-
-		self.alphaupper = decodersDict['alphaupper']
-		self.alphaupper2 = decodersDict['alphaupper2']
-		self.alphaupper_generic = decodersDict['alphaupper_generic']
-		self.alphaupper_bindport = decodersDict['alphaupper_bindport']
-		self.alphaupper_connback = decodersDict['alphaupper_connback']
-
-		self.mannheim = decodersDict['mannheim']
-
-		self.duesseldorf = decodersDict['duesseldorf']
-
-		self.langenfeld = decodersDict['langenfeld']
-		self.langenfeld_connback = decodersDict['langenfeld_connback']
-		self.langenfeld_connback2 = decodersDict['langenfeld_connback2']
-
-		self.bonn = decodersDict['bonn']
-
-		self.siegburg = decodersDict['siegburg']
-		self.siegburg_bindshell = decodersDict['siegburg_bindshell']
-
-		self.ulm = decodersDict['ulm']
-		self.ulm_bindshell = decodersDict['ulm_bindshell']
-		self.ulm_bindshell2 = decodersDict['ulm_bindshell2']
-		self.ulm_connback = decodersDict['ulm_connback']
-
-		self.bergheim = decodersDict['bergheim']
-		self.bergheim_connback = decodersDict['bergheim_connback']
-
-		self.alpha2endchar = decodersDict['alpha2endchar']
-		self.alpha2connback = decodersDict['alpha2connback']
-		self.alpha2bind = decodersDict['alpha2bind']
-
-		### unnamed shellcode
-		self.bind1 = decodersDict['bindshell1']
-		self.bind2 = decodersDict['bindshell2']
-		self.bind3 = decodersDict['bindshell3']
-		self.bind4 = decodersDict['bindshell4']
-		self.bind5 = decodersDict['bindshell5']
-		self.plain1 = decodersDict['plain1']
-		self.plain2 = decodersDict['plain2']
 
 	def getNewResultSet(self, vulnName, attIP, ownIP):
 			resultSet = {}
@@ -264,7 +173,7 @@ class shell_mgr:
 		if cmd.startswith('cmd /c echo open'):
 			cmd_liste = cmd.split(' ')
 			target_ip = cmd_liste[4]
-			match = self.checkIPExpre.search(target_ip)
+			match = self.decodersDict['checkIP'].search(target_ip)
 			if match:
 				local = self.check_local(target_ip)
 				if local and self.replace_locals:
@@ -324,7 +233,7 @@ class shell_mgr:
 			if self.displayShellCode:
 				print "starting Leimbach matching ..."
 				sys.stdout.flush()
-			match = self.leimbach.search( self.shellcode )
+			match = self.decodersDict['leimbach'].search( self.shellcode )
 			if match:
 				key = struct.unpack('B',match.groups()[0])[0]
 				self.resultSet['xorkey'] = key
@@ -362,7 +271,7 @@ class shell_mgr:
 			if self.displayShellCode:
 				print "starting Mannheim matching ..."
 				sys.stdout.flush()
-			match = self.mannheim.search( self.shellcode )
+			match = self.decodersDict['mannheim'].search( self.shellcode )
 			if match:
 				#self.write_hexdump(self.shellcode, "mannheim")
 				key = struct.unpack('B',match.groups()[0])[0]
@@ -380,7 +289,7 @@ class shell_mgr:
 			if self.displayShellCode:
 				print "starting Unnamed Shellcode2 matching ..."
 				sys.stdout.flush()
-			match = self.plain2.search( self.shellcode )
+			match = self.decodersDict['plain2'].search( self.shellcode )
 			if match:
 				raw_port = match.groups()[0]
 				port = struct.unpack('!H',raw_port)[0]
@@ -398,7 +307,7 @@ class shell_mgr:
 			if self.displayShellCode:
 				print "starting Aachen Shellcode matching ..."
 				sys.stdout.flush()
-			match = self.aachen.search( self.shellcode )
+			match = self.decodersDict['aachen'].search( self.shellcode )
 			if match:
 				#self.write_hexdump(self.shellcode, "aachen")
 				ipkey = struct.unpack('!L',match.groups()[0])[0]
@@ -410,7 +319,7 @@ class shell_mgr:
 			if self.displayShellCode:
 				print "starting Mainz / Bielefeld matching ..."
 				sys.stdout.flush()
-			match = self.mainz.search( self.shellcode )
+			match = self.decodersDict['mainz'].search( self.shellcode )
 			if match:
 				#self.write_hexdump(self.shellcode, "mainz")
 				key = struct.unpack('B',match.groups()[0])[0]
@@ -453,7 +362,7 @@ class shell_mgr:
 			if self.displayShellCode:
 				print "starting Koeln matching ..."
 				sys.stdout.flush()
-			match = self.koeln.search( self.shellcode )
+			match = self.decodersDict['koeln'].search( self.shellcode )
 			if match:
 				keys = {}
 				for i in xrange(0,4):
@@ -466,7 +375,7 @@ class shell_mgr:
 			if self.displayShellCode:
 				print "starting Lindau matching ..."
 				sys.stdout.flush()
-			match = self.linkbot.search( self.shellcode )
+			match = self.decodersDict['linkbot'].search( self.shellcode )
 			if match:
 				#self.write_hexdump(self.shellcode, "lindau")
 				key = struct.unpack('B',match.groups()[0])[0]
@@ -479,7 +388,7 @@ class shell_mgr:
 			if self.displayShellCode:
 				print "starting schauenburg matching ..."
 				sys.stdout.flush()
-			match = self.schauenburg.search( self.shellcode )
+			match = self.decodersDict['schauenburg'].search( self.shellcode )
 			if match:
 				key = struct.unpack('B',match.groups()[0])[0]
 				self.resultSet['xorkey'] = key
@@ -491,7 +400,7 @@ class shell_mgr:
 			if self.displayShellCode:
 				print "starting plain1 matching ..."
 				sys.stdout.flush()
-			match = self.plain1.search( self.shellcode )
+			match = self.decodersDict['plain1'].search( self.shellcode )
 			if match:
 				raw_port = match.groups()[0]
 				port = struct.unpack('<H',raw_port)[0]
@@ -509,7 +418,7 @@ class shell_mgr:
 			if self.displayShellCode:
 				print "starting PexAlphaNumeric matching ..."
 				sys.stdout.flush()
-			match = self.pexalphanum.search( self.shellcode )
+			match = self.decodersDict['pexalphanum'].search( self.shellcode )
 			if match:
 				decoder = match.groups()[0]
 				payload = match.groups()[1]
@@ -520,21 +429,21 @@ class shell_mgr:
 			if self.displayShellCode:
 				print "starting Alpha_Upper matching ..."
 				sys.stdout.flush()
-			match = self.alphaupper.search( self.shellcode )
+			match = self.decodersDict['alphaupper'].search( self.shellcode )
 			if match:
 				decoder = match.groups()[0]
 				payload = match.groups()[1]
 				self.log_obj.log("found Alpha_Upper decoder", 9, "info", False, True)
 				if self.handle_alphaupper( decoder, payload ):
 					return True
-			match = self.alphaupper2.search( self.shellcode )
+			match = self.decodersDict['alphaupper2'].search( self.shellcode )
 			if match:
 				decoder = match.groups()[0]
 				payload = match.groups()[1]
 				self.log_obj.log("found Alpha_Upper decoder", 9, "info", False, True)
 				if self.handle_alphaupper( decoder, payload ):
 					return True
-			match = self.alphaupper_generic.search( self.shellcode )
+			match = self.decodersDict['alphaupper_generic'].search( self.shellcode )
 			if match:
 				decoder = match.groups()[0]
 				payload = match.groups()[1]
@@ -545,7 +454,7 @@ class shell_mgr:
 			if self.displayShellCode:
 				print "starting Lichtenfels matching ..."
 				sys.stdout.flush()
-			match = self.lichtenfels.search( self.shellcode )
+			match = self.decodersDict['lichtenfels'].search( self.shellcode )
 			if match:
 				#self.write_hexdump(self.shellcode, "lichtenfels")
 				key = struct.unpack('B',match.groups()[0])[0]
@@ -558,7 +467,7 @@ class shell_mgr:
 			if self.displayShellCode:
 				print "starting Berlin matching ..."
 				sys.stdout.flush()
-			match = self.berlin.search( self.shellcode )
+			match = self.decodersDict['berlin'].search( self.shellcode )
 			if match:
 				key = struct.unpack('B',match.groups()[0])[0]
 				self.resultSet['xorkey'] = key
@@ -570,7 +479,7 @@ class shell_mgr:
 			if self.displayShellCode:
 				print "starting Furth matching ..."
 				sys.stdout.flush()
-			match = self.furth.search( self.shellcode )
+			match = self.decodersDict['furth'].search( self.shellcode )
 			if match:
 				key = struct.unpack('B',match.groups()[0])[0]
 				self.resultSet['xorkey'] = key
@@ -584,7 +493,7 @@ class shell_mgr:
 			if self.displayShellCode:
 				print "starting Duesseldorf matching ..."
 				sys.stdout.flush()
-			match = self.duesseldorf.search( self.shellcode )
+			match = self.decodersDict['duesseldorf'].search( self.shellcode )
 			if match:
 				key1 = struct.unpack('B',match.groups()[0])[0]
 				key2 = struct.unpack('B',match.groups()[1])[0]
@@ -599,7 +508,7 @@ class shell_mgr:
 			if self.displayShellCode:
 				print "starting Siegburg matching ..."
 				sys.stdout.flush()
-			match = self.siegburg.search( self.shellcode )
+			match = self.decodersDict['siegburg'].search( self.shellcode )
 			if match:
 				key = struct.unpack('B',match.groups()[0])[0]
 				self.log_obj.log("found siegburg xor decoder (key: %s)" % (key), 9, "info", False, True)
@@ -611,7 +520,7 @@ class shell_mgr:
 			if self.displayShellCode:
 				print "starting Ulm matching ..."
 				sys.stdout.flush()
-			match = self.ulm.search( self.shellcode )
+			match = self.decodersDict['ulm'].search( self.shellcode )
 			if match:
 				keys = {}
 				for i in xrange(0,4):
@@ -624,7 +533,7 @@ class shell_mgr:
 			if self.displayShellCode:
 				print "starting Langenfeld matching ..."
 				sys.stdout.flush()
-			match = self.langenfeld.search( self.shellcode )
+			match = self.decodersDict['langenfeld'].search( self.shellcode )
 			if match:
 				key = struct.unpack('B',match.groups()[0])[0]
 				self.log_obj.log("found langenfeld xor decoder (key: %s)" % (key), 9, "info", False, True)
@@ -636,7 +545,7 @@ class shell_mgr:
 			if self.displayShellCode:
 				print "starting Bonn matching ..."
 				sys.stdout.flush()
-			match = self.bonn.search( self.shellcode )
+			match = self.decodersDict['bonn'].search( self.shellcode )
 			if match:
 				#self.write_hexdump(self.shellcode, "bonn")
 				key = struct.unpack('B',match.groups()[0])[0]
@@ -649,7 +558,7 @@ class shell_mgr:
 			if self.displayShellCode:
 				print "starting Unnamed BindShellcode1 matching ..."
 				sys.stdout.flush()
-			match = self.bind1.search( self.shellcode )
+			match = self.decodersDict['bindshell1'].search( self.shellcode )
 			if match:
 				raw_port = match.groups()[0]
 				port = struct.unpack('!H',raw_port)[0]
@@ -667,7 +576,7 @@ class shell_mgr:
 			if self.displayShellCode:
 				print "starting Unnamed BindShellcode2 matching ..."
 				sys.stdout.flush()
-			match = self.bind2.search( self.shellcode )
+			match = self.decodersDict['bindshell2'].search( self.shellcode )
 			if match:
 				raw_port = match.groups()[0]
 				port = struct.unpack('!H',raw_port)[0]
@@ -685,7 +594,7 @@ class shell_mgr:
 			if self.displayShellCode:
 				print "starting Unnamed BindShellcode3 matching ..."
 				sys.stdout.flush()
-			match = self.bind3.search( self.shellcode2 )
+			match = self.decodersDict['bindshell3'].search( self.shellcode2 )
 			if match:
 				raw_port = match.groups()[0]
 				port = struct.unpack('!H',raw_port)[0]
@@ -703,7 +612,7 @@ class shell_mgr:
 			if self.displayShellCode:
 				print "starting Unnamed BindShellcode4 matching ..."
 				sys.stdout.flush()
-			match = self.bind4.search( self.shellcode )
+			match = self.decodersDict['bindshell4'].search( self.shellcode )
 			if match:
 				raw_port = match.groups()[0]
 				port = struct.unpack('!H',raw_port)[0]
@@ -721,7 +630,7 @@ class shell_mgr:
 			if self.displayShellCode:
 				print "starting Unnamed BindShellcode5 matching ..."
 				sys.stdout.flush()
-			match = self.bind5.search( self.shellcode2 )
+			match = self.decodersDict['bindshell5'].search( self.shellcode2 )
 			if match:
 				raw_port = match.groups()[0]
 				port = struct.unpack('!H',raw_port)[0]
@@ -757,13 +666,13 @@ class shell_mgr:
 			if self.displayShellCode:
 				print "starting Base64Encoded PexAlphaNumeric matching ..."
 				sys.stdout.flush()
-			match = self.alphaNum.search( self.shellcode )
+			match = self.decodersDict['alphaNum'].search( self.shellcode )
 			if match:
 				payload = match.groups()[0]
 				payload += "=="
 				try:
 					decodedPayload = base64.decodestring(payload)
-					match = self.pexalphanum.search( decodedPayload )
+					match = self.decodersDict['pexalphanum'].search( decodedPayload )
 					if match:
 						decoder = match.groups()[0]
 						payload = match.groups()[1]
@@ -776,7 +685,7 @@ class shell_mgr:
 			if self.displayShellCode:
 				print "starting Base64Encoded AlphaNumeric plain URL matching ..."
 				sys.stdout.flush()
-			match = self.alphaNum2.search( self.shellcode )
+			match = self.decodersDict['alphaNum2'].search( self.shellcode )
 			if match:
 				payload = match.groups()[0]
 				payload += "=="
@@ -791,7 +700,7 @@ class shell_mgr:
 			if self.displayShellCode:
 				print "starting Alpha2 zero tolerance matching ..."
 				sys.stdout.flush()
-			match = self.alpha2endchar.search( self.shellcode )
+			match = self.decodersDict['alpha2endchar'].search( self.shellcode )
 			if match:
 				endChar = match.groups()[0]
 				load = match.groups()[1]
@@ -807,7 +716,7 @@ class shell_mgr:
 			if self.displayShellCode:
 				print "starting Bergheim matching ..."
 				sys.stdout.flush()
-			match = self.bergheim.search( self.shellcode )
+			match = self.decodersDict['bergheim'].search( self.shellcode )
 			if match:
 				key = struct.unpack('B',match.groups()[0])[0]
 				self.resultSet['xorkey'] = key
@@ -853,8 +762,8 @@ class shell_mgr:
 				decodedMessage[edx] = struct.pack('B', (0xff&(struct.unpack('B', decodedMessage[ecx])[0]*0x10)^struct.unpack('B', decodedMessage[ecx+1])[0]))
 			dec_shellcode = "".join(decodedMessage)
 
-			m1 = self.alphaupper_bindport.search( dec_shellcode )
-			m2 = self.alphaupper_connback.search( dec_shellcode )
+			m1 = self.decodersDict['alphaupper_bindport'].search( dec_shellcode )
+			m2 = self.decodersDict['alphaupper_connback'].search( dec_shellcode )
 			if m1 or m2:
 				break
 			initecx += 1
@@ -919,7 +828,7 @@ class shell_mgr:
 			decodedMessage[i/2] = struct.pack('B',resultBit)
 		dec_shellcode = "".join(decodedMessage.values())
 
-		m = self.pexalphanum_bindport.search( dec_shellcode )
+		m = self.decodersDict['pexalphanum_bindport'].search( dec_shellcode )
 		if m:
 			raw_port = m.groups()[0]
 			port = struct.unpack('!H',raw_port)[0]
@@ -955,7 +864,7 @@ class shell_mgr:
 			decodedMessage[i/2] = struct.pack('B',resultBit)
 		decoded_shellcode = "".join(decodedMessage.values())
 		### connectback shell (reverse shell)
-		match = self.alpha2connback.search( decoded_shellcode )
+		match = self.decodersDict['alpha2connback'].search( decoded_shellcode )
 		if match:
 			raw_ip = match.groups()[0]
 			ip = struct.unpack('I',raw_ip)[0]
@@ -978,7 +887,7 @@ class shell_mgr:
 			self.resultSet['shellcodeName'] = "alpha2zero"
 			return True
 		### bindshell
-		match = self.alpha2bind.search( decoded_shellcode )
+		match = self.decodersDict['alpha2bind'].search( decoded_shellcode )
 		if match:
 			raw_port = match.groups()[0]
 			port = struct.unpack('!H',raw_port)[0]
@@ -1005,7 +914,7 @@ class shell_mgr:
 
 	def handle_aachen(self, ip_key, port_key):
 		m = False
-		m = self.aachen_connback.search( self.shellcode )
+		m = self.decodersDict['aachen_connback'].search( self.shellcode )
 		if m:
 			raw_port = m.groups()[0]
 			port = struct.unpack('!H',raw_port)[0]^port_key
@@ -1033,7 +942,7 @@ class shell_mgr:
 	def handle_bergheim(self, key, dec_shellcode):
 		m = False
 		### bergheim ConnectBack Shellcode
-		m = self.bergheim_connback.search( dec_shellcode )
+		m = self.decodersDict['bergheim_connback'].search( dec_shellcode )
 		if m:
 			raw_port = m.groups()[0]
 			port = struct.unpack('!H',raw_port)[0]
@@ -1062,9 +971,9 @@ class shell_mgr:
 	def handle_langenfeld(self, key, dec_shellcode):
 		m = False
 		### langenfeld ConnectBack Shellcode
-		m = self.langenfeld_connback.search( dec_shellcode )
+		m = self.decodersDict['langenfeld_connback'].search( dec_shellcode )
 		if not m:
-			m = self.langenfeld_connback2.search( dec_shellcode )
+			m = self.decodersDict['langenfeld_connback2'].search( dec_shellcode )
 		if m:
 			raw_port = m.groups()[0]
 			port = struct.unpack('!H',raw_port)[0]
@@ -1095,7 +1004,7 @@ class shell_mgr:
 	def handle_bielefeld(self, key, dec_shellcode):
 		m = False
 		### Mainz / Bielefeld - BindPort Shellcode 1
-		m = self.mainz_bindport1.search( dec_shellcode )
+		m = self.decodersDict['mainz_bindport1'].search( dec_shellcode )
 		if m:
 			raw_port = m.groups()[0]
 			port = struct.unpack('!H',raw_port)[0]
@@ -1110,7 +1019,7 @@ class shell_mgr:
 			self.resultSet['shellcodeName'] = "mainz"
 			return True
 		### Mainz / Bielefeld - BindPort Shellcode 2
-		m = self.mainz_bindport2.search( dec_shellcode )
+		m = self.decodersDict['mainz_bindport2'].search( dec_shellcode )
 		if m:
 			raw_port = m.groups()[0]
 			port = struct.unpack('!H',raw_port)[0]
@@ -1140,7 +1049,7 @@ class shell_mgr:
 			self.resultSet['shellcodeName'] = "mainz"
 			return True
 		### Mainz / Bielefeld - ConnectBack Shellcode 1
-		m = self.mainz_connback1.search( dec_shellcode )
+		m = self.decodersDict['mainz_connback1'].search( dec_shellcode )
 		if m:
 			raw_port = m.groups()[0]
 			port = struct.unpack('!H',raw_port)[0]
@@ -1164,7 +1073,7 @@ class shell_mgr:
 			self.resultSet['shellcodeName'] = "bielefeld"
 			return True
 		### Mainz / Bielefeld - ConnectBack Shellcode 2
-		m = self.mainz_connback2.search( dec_shellcode )
+		m = self.decodersDict['mainz_connback2'].search( dec_shellcode )
 		if m:
 			raw_ip = m.groups()[0]
 			ip = struct.unpack('I',raw_ip)[0]
@@ -1188,7 +1097,7 @@ class shell_mgr:
 			self.resultSet['shellcodeName'] = "bielefeld"
 			return True
 		### Mainz / Bielefeld - ConnectBack Shellcode 3
-		m = self.mainz_connback3.search( dec_shellcode )
+		m = self.decodersDict['mainz_connback3'].search( dec_shellcode )
 		if m:
 			raw_port = m.groups()[0]
 			port = struct.unpack('!H',raw_port)[0]
@@ -1226,9 +1135,9 @@ class shell_mgr:
 		while i<=len(keys):
 			dec_shellcode = self.decrypt_multi_xor(keys, self.shellcode, i)
 			#self.write_hexdump(dec_shellcode, "ulm-%i" % (i), "decoded")
-			m1 = self.ulm_bindshell.search( dec_shellcode )
-			m2 = self.ulm_connback.search( dec_shellcode )
-			m3 = self.ulm_bindshell2.search( dec_shellcode )
+			m1 = self.decodersDict['ulm_bindshell'].search( dec_shellcode )
+			m2 = self.decodersDict['ulm_connback'].search( dec_shellcode )
+			m3 = self.decodersDict['ulm_bindshell2'].search( dec_shellcode )
 			m4 = self.decodersDict['ulm_connback2'].search( dec_shellcode )
 			if m1 or m2 or m3 or m4:
 				break
@@ -1411,7 +1320,7 @@ class shell_mgr:
 
 	def handle_siegburg(self, key, dec_shellcode):
 		m = False
-		m = self.siegburg_bindshell.search( dec_shellcode)
+		m = self.decodersDict['siegburg_bindshell'].search( dec_shellcode)
 		if m:
 			raw_port = m.groups()[0]
 			port = struct.unpack('!H',raw_port)[0]
@@ -1433,7 +1342,7 @@ class shell_mgr:
 		i = 0
 		while i<=len(keys):
 			dec_shellcode = self.decrypt_multi_xor(keys, self.shellcode, i)
-			m = self.koeln_bindport.search( dec_shellcode )
+			m = self.decodersDict['koeln_bindport'].search( dec_shellcode )
 			if m:
 				break
 			i += 1
@@ -1455,7 +1364,7 @@ class shell_mgr:
 
 	def handle_linkbot(self, key, dec_shellcode):
 		m = False
-		m = self.linkbot_connback.search( dec_shellcode )
+		m = self.decodersDict['linkbot_connback'].search( dec_shellcode )
 		if m:
 			raw_ip = m.groups()[0]
 			ip = struct.unpack('I',raw_ip)[0]
@@ -1479,7 +1388,7 @@ class shell_mgr:
 			self.resultSet['displayURL'] = cbackURL
 			self.resultSet['shellcodeName'] = "linkbot"
 			return True
-		m = self.linkbot_connback2.search( dec_shellcode )
+		m = self.decodersDict['linkbot_connback2'].search( dec_shellcode )
 		if m:
 			raw_ip = m.groups()[0]
 			ip = struct.unpack('I',raw_ip)[0]
@@ -1503,7 +1412,7 @@ class shell_mgr:
 			self.resultSet['displayURL'] = cbackURL
 			self.resultSet['shellcodeName'] = "linkbot"
 			return True
-		m = self.linkbot_connback3.search( dec_shellcode )
+		m = self.decodersDict['linkbot_connback3'].search( dec_shellcode )
 		if m:
 			raw_ip = m.groups()[1]
 			ip = struct.unpack('I',raw_ip)[0]
@@ -1531,7 +1440,7 @@ class shell_mgr:
 
 	def handle_schauenburg(self, key, dec_shellcode):
 		m = False
-		m = self.schauenburg_bindport.search( dec_shellcode )
+		m = self.decodersDict['schauenburg_bindport'].search( dec_shellcode )
 		if m:
 			raw_port = m.groups()[0]
 			port = struct.unpack('!H',raw_port)[0]
@@ -1546,7 +1455,7 @@ class shell_mgr:
 			self.resultSet['shellcodeName'] = "schauenburg"
 			return True
 		m = False
-		m = self.schauenburg_connback.search( dec_shellcode )
+		m = self.decodersDict['schauenburg_connback'].search( dec_shellcode )
 		if m:
 			raw_ip = m.groups()[0]
 			ip = struct.unpack('I',raw_ip)[0]
@@ -1572,11 +1481,11 @@ class shell_mgr:
 		return False
 
 	def handle_berlin(self, key, dec_shellcode):
-		m = self.ftpcmdExpre.search( dec_shellcode )
+		m = self.decodersDict['ftpcmd'].search( dec_shellcode )
 		if m:
 			self.log_obj.log("Windows CMD FTP checking", 9, "crit", True, False)
 			ip = m.groups()[0]
-			cipmatch = self.checkIPExpre.search(ip)
+			cipmatch = self.decodersDict['checkIP'].search(ip)
 			if cipmatch:
 				local = self.check_local(ip)
 				if local and self.replace_locals:
@@ -1606,7 +1515,7 @@ class shell_mgr:
 			return True
 
 	def handle_leimbach(self, key, dec_shellcode):
-		m = self.tftpExpre.search( dec_shellcode )
+		m = self.decodersDict['tftp'].search( dec_shellcode )
 		if m:
 			tftp_command = m.groups()[0]
 			ip = m.groups()[2]
@@ -1636,7 +1545,7 @@ class shell_mgr:
 			return True
 
 	def handle_lichtenfels(self, key, dec_shellcode):
-		m = self.lichtenfels_connback.search( dec_shellcode )
+		m = self.decodersDict['lichtenfels_connback'].search( dec_shellcode )
 		if m:
 			raw_port = m.groups()[0]
 			port = struct.unpack('!H',raw_port)[0]
@@ -1692,9 +1601,9 @@ class shell_mgr:
 	def match_url(self, dec_shellcode="None"):
 		try:
 			if dec_shellcode=="None":
-				match = self.urlExpre.search( self.shellcode )
+				match = self.decodersDict['url'].search( self.shellcode )
 			else:
-				match = self.urlExpre.search( dec_shellcode )
+				match = self.decodersDict['url'].search( dec_shellcode )
 			if self.displayShellCode:
 				print "starting AnyURL matching ..."
 				sys.stdout.flush()
@@ -1722,7 +1631,7 @@ class shell_mgr:
 						dl_host = url_obj[1]
 						dl_port = '80'
 					### host ersetzen falls locate addresse
-					ipmatch = self.checkIPExpre.search(dl_host)
+					ipmatch = self.decodersDict['checkIP'].search(dl_host)
 					if ipmatch:
 						if self.replace_locals and self.check_local(dl_host):
 							dl_host = self.attIP
@@ -1754,7 +1663,7 @@ class shell_mgr:
 					(username, passwort) = userpass.split(':')
 					(hostname, port) = hostport.split(':')
 					### if ip and not hostname check replace locals
-					ipmatch = self.checkIPExpre.search(hostname)
+					ipmatch = self.decodersDict['checkIP'].search(hostname)
 					if ipmatch:
 						if self.replace_locals and self.check_local(hostname):
 							hostname = self.attIP
@@ -1844,12 +1753,12 @@ class shell_mgr:
 				ShellcodeToAnalyse = self.shellcode
 			else:
 				ShellcodeToAnalyse = dec_shellcode
-			match = self.ftpcmd3IPExpre.search(ShellcodeToAnalyse)
+			match = self.decodersDict['ftpcmd3ip'].search(ShellcodeToAnalyse)
 			if match:
 				ip = match.groups()[0]
 				position = ShellcodeToAnalyse.find(ip)
 				Cutshellcode = ShellcodeToAnalyse[position:]
-				cipmatch = self.checkIPExpre.search(ip)
+				cipmatch = self.decodersDict['checkIP'].search(ip)
 				if cipmatch:
 					local = self.check_local(ip)
 					if local and self.replace_locals:
@@ -1868,7 +1777,7 @@ class shell_mgr:
 					self.log_obj.log("wrong port: %s" % (port), 6, "crit", True, True)
 					self.log_obj.log("trying default 21" , 6, "crit", True, True)
 					port = 21
-				match2 = self.ftpcmd3UserPassExpre.search(Cutshellcode)
+				match2 = self.decodersDict['ftpcmd3userpass'].search(Cutshellcode)
 				if match2:
 					if match2.groups()[0] != None:
 						user = match2.groups()[0].strip()
@@ -1883,7 +1792,7 @@ class shell_mgr:
 						user = match2.groups()[6].strip()
 						passw = match2.groups()[7].strip()
 					#self.log_obj.log("found user %s and pass %s" % (user, passw), 6, "crit", True, True)
-					match3 = self.ftpcmd3BinExpre.findall(Cutshellcode)
+					match3 = self.decodersDict['ftpcmd3binary'].findall(Cutshellcode)
 					if match3:
 						filenameList = []
 						for fileMatch in match3:
@@ -1933,11 +1842,11 @@ class shell_mgr:
 			if self.displayShellCode:
 				print "starting Plain FTP CMD Shell matching ..."
 				sys.stdout.flush()
-			match = self.ftpcmdExpre.search(self.shellcode)
+			match = self.decodersDict['ftpcmd'].search(self.shellcode)
 			if match:
 				#self.log_obj.log("Windows CMD FTP checking", 9, "crit", True, False)
 				ip = match.groups()[0]
-				cipmatch = self.checkIPExpre.search(ip)
+				cipmatch = self.decodersDict['checkIP'].search(ip)
 				if cipmatch:
 					local = self.check_local(ip)
 					if local and self.replace_locals:
@@ -1969,7 +1878,7 @@ class shell_mgr:
 			if self.displayShellCode:
 				print "starting Plain FTP CMD 2 Shell matching ..."
 				sys.stdout.flush()
-			match = self.ftpcmd2Expre.search(self.shellcode)
+			match = self.decodersDict['ftpcmd2'].search(self.shellcode)
 			if match:
 				#self.log_obj.log("Windows CMD FTP 2 checking", 9, "crit", True, False)
 				###('hack95fy.3322.or', None, 'sb', 'sb', 'ftp.txt\r\necho bin>>ftp.txt\r\necho get sx.exe>>', 'sx.exe', 'ftp.txt\r\necho get qq.exe>>', 'qq.exe', 'ftp.txt\r\necho get 3389.exe>>', '3389.exe')
@@ -2015,9 +1924,9 @@ class shell_mgr:
 				print "starting Plain TFTP 1 CMD Shell matching ..."
 				sys.stdout.flush()
 			if dec_shellcode==None:
-				match = self.tftpExpre1.search(self.shellcode)
+				match = self.decodersDict['tftp1'].search(self.shellcode)
 			else:
-				match = self.tftpExpre1.search(dec_shellcode)
+				match = self.decodersDict['tftp1'].search(dec_shellcode)
 			if match:
 				#self.log_obj.log("Windows CMD TFTP 1 checking", 9, "crit", True, False)
 				if match.groups()[2]!=None:
@@ -2047,9 +1956,9 @@ class shell_mgr:
 				print "starting Plain TFTP 2 CMD Shell matching ..."
 				sys.stdout.flush()
 			if dec_shellcode==None:
-				match = self.tftpExpre.search(self.shellcode)
+				match = self.decodersDict['tftp'].search(self.shellcode)
 			else:
-				match = self.tftpExpre.search(dec_shellcode)
+				match = self.decodersDict['tftp'].search(dec_shellcode)
 			if match:
 				#self.log_obj.log("Windows CMD TFTP checking", 9, "crit", True, False)
 				ip = match.groups()[2]
