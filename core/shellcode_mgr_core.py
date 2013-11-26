@@ -15,20 +15,20 @@ try:
 except ImportError:
 	pass
 
-import re
-import urlparse
-import hashlib
-import os
-import socket
-import struct
-import base64
+from re import compile, S as reS
+from urlparse import urlsplit, urlunparse
+from hashlib import md5
+from os import path as ospath
+from socket import inet_ntoa
+from struct import pack, unpack
+from base64 import decodestring, b64encode
 
-import sys
-import StringIO
+from sys import exit, stdout
+from StringIO import StringIO
 import traceback
 
-import iprange
-import amun_logging
+from iprange import IPRange
+from amun_logging import amun_logging
 
 class shell_mgr:
 	def __init__(self, decodersDict, shLogger, config_dict):
@@ -43,14 +43,14 @@ class shell_mgr:
 		self.config_dict = config_dict
 		### create local network ranges
 		self.localIPliste = []
-		self.localIPliste.append( iprange.IPRange("0.0.0.0/8") )
-		self.localIPliste.append( iprange.IPRange("10.0.0.0/8") )
-		self.localIPliste.append( iprange.IPRange("127.0.0.0/8") )
-		self.localIPliste.append( iprange.IPRange("169.254.0.0/16") )
-		self.localIPliste.append( iprange.IPRange("172.16.0.0/12") )
-		self.localIPliste.append( iprange.IPRange("192.168.0.0/16") )
+		self.localIPliste.append( IPRange("0.0.0.0/8") )
+		self.localIPliste.append( IPRange("10.0.0.0/8") )
+		self.localIPliste.append( IPRange("127.0.0.0/8") )
+		self.localIPliste.append( IPRange("169.254.0.0/16") )
+		self.localIPliste.append( IPRange("172.16.0.0/12") )
+		self.localIPliste.append( IPRange("192.168.0.0/16") )
 		### local logging instance
-		self.log_obj = amun_logging.amun_logging("shellcode_manager", shLogger)
+		self.log_obj = amun_logging("shellcode_manager", shLogger)
 		### load shellcodes
 		self.decodersDict = decodersDict
 
@@ -190,8 +190,6 @@ class shell_mgr:
 		key -- XOR key to use
 
 		"""
-		unpack = struct.unpack
-		pack = struct.pack
 		return pack('B', unpack('B',char)[0] ^ key )
 
 	def decrypt_xor(self, key, data):
@@ -202,8 +200,6 @@ class shell_mgr:
 		data -- character string to XOR with given key
 
 		"""
-		unpack = struct.unpack
-		pack = struct.pack
 		return "".join([self.decXorHelper(char,key) for char in data])
 
 	def decrypt_multi_xor(self, keys, data, position=0):
@@ -215,8 +211,6 @@ class shell_mgr:
 		position -- position where to start in given string to XOR (default 0)
 
 		"""
-		unpack = struct.unpack
-		pack = struct.pack
 		decrypted = []
 		keyPos = position % len(keys)
 		for char in data:
@@ -267,17 +261,17 @@ class shell_mgr:
 			### Match Wuerzburg Shellcode
 			if self.displayShellCode:
 				print "starting Wuerzburg matching ..."
-				sys.stdout.flush()
+				stdout.flush()
 			match = self.decodersDict['wuerzburg'].search( self.shellcode )
 			if match:
 				#self.write_hexdump(self.shellcode, "wuerzburg")
 				raw_port = match.groups()[0]
-				port = struct.unpack('!H',raw_port)[0]
+				port = unpack('!H',raw_port)[0]
 				raw_ip = match.groups()[1]
-				ip = struct.unpack('I',raw_ip)[0]
-				ip = struct.pack('I',ip^0xaaaaaaaa)
-				ip = socket.inet_ntoa(ip)
-				key = struct.unpack('B',match.groups()[2])[0]
+				ip = unpack('I',raw_ip)[0]
+				ip = pack('I',ip^0xaaaaaaaa)
+				ip = inet_ntoa(ip)
+				key = unpack('B',match.groups()[2])[0]
 				if self.replace_locals and self.check_local(ip):
 					ip = self.attIP
 				elif self.check_local(ip):
@@ -296,10 +290,10 @@ class shell_mgr:
 			### Match Leimbach shellcode
 			if self.displayShellCode:
 				print "starting Leimbach matching ..."
-				sys.stdout.flush()
+				stdout.flush()
 			match = self.decodersDict['leimbach'].search( self.shellcode )
 			if match:
-				key = struct.unpack('B',match.groups()[0])[0]
+				key = unpack('B',match.groups()[0])[0]
 				self.resultSet['xorkey'] = key
 				self.log_obj.log("found leimbach xor decoder (key: %s)" % (key), 9, "info", False, True)
 				dec_shellcode = self.decrypt_xor(key, self.shellcode)
@@ -308,10 +302,10 @@ class shell_mgr:
 			### Match Conficker Shellcode
 			if self.displayShellCode:
 				print "starting Conficker matching ..."
-				sys.stdout.flush()
+				stdout.flush()
 			match = self.decodersDict['conficker'].search( self.shellcode )
 			if match:
-				key = struct.unpack('B',match.groups()[0])[0]
+				key = unpack('B',match.groups()[0])[0]
 				self.resultSet['xorkey'] = key
 				self.log_obj.log("found conficker xor decoder (key: %s)" % (key), 9, "info", False, True)
 				dec_shellcode = self.decrypt_xor(key, self.shellcode)
@@ -320,13 +314,13 @@ class shell_mgr:
 			### Match Adenau Shellcode
 			if self.displayShellCode:
 				print "starting Adenau matching ..."
-				sys.stdout.flush()
+				stdout.flush()
 			match = self.decodersDict['adenau'].search( self.shellcode )
 			if match:
 				#self.write_hexdump(self.shellcode, "adenau")
 				keys = {}
 				for i in xrange(0,4):
-					keys[i] =  struct.unpack('B',match.groups()[i])[0]
+					keys[i] =  unpack('B',match.groups()[i])[0]
 				self.resultSet['xorkey'] = keys
 				self.log_obj.log("found adenau xor decoder (keys: %s)" % (keys), 9, "info", False, True)
 				if self.handle_adenau( keys ):
@@ -334,11 +328,11 @@ class shell_mgr:
 			### Match Mannheim Shellcode1
 			if self.displayShellCode:
 				print "starting Mannheim matching ..."
-				sys.stdout.flush()
+				stdout.flush()
 			match = self.decodersDict['mannheim'].search( self.shellcode )
 			if match:
 				#self.write_hexdump(self.shellcode, "mannheim")
-				key = struct.unpack('B',match.groups()[0])[0]
+				key = unpack('B',match.groups()[0])[0]
 				self.log_obj.log("found shell1 (key: %s)" % (key), 9, "info", True, True)
 				enc_command = match.groups()[1]
 				dec_command = self.decrypt_xor(key,enc_command)
@@ -352,11 +346,11 @@ class shell_mgr:
 			### Match Unnamed Shellcode2
 			if self.displayShellCode:
 				print "starting Unnamed Shellcode2 matching ..."
-				sys.stdout.flush()
+				stdout.flush()
 			match = self.decodersDict['plain2'].search( self.shellcode )
 			if match:
 				raw_port = match.groups()[0]
-				port = struct.unpack('!H',raw_port)[0]
+				port = unpack('!H',raw_port)[0]
 				self.log_obj.log("found shell2 (port: %s)" % (port), 9, "info", True, True)
 				self.resultSet['port'] = port
 				self.resultSet['found'] = "bindport"
@@ -370,23 +364,23 @@ class shell_mgr:
 			### Match Aachen Shellcode (aka zuc_winshit)
 			if self.displayShellCode:
 				print "starting Aachen Shellcode matching ..."
-				sys.stdout.flush()
+				stdout.flush()
 			match = self.decodersDict['aachen'].search( self.shellcode )
 			if match:
 				#self.write_hexdump(self.shellcode, "aachen")
-				ipkey = struct.unpack('!L',match.groups()[0])[0]
-				portkey = struct.unpack('!H',match.groups()[1])[0]
+				ipkey = unpack('!L',match.groups()[0])[0]
+				portkey = unpack('!H',match.groups()[1])[0]
 				self.log_obj.log("found aachen shellcode (ipkey: %s portkey: %s)" % (ipkey, portkey), 9, "info", False, True)
 				if self.handle_aachen( ipkey, portkey ):
 					return True
 			### Match Mainz / Bielefeld Shellcode
 			if self.displayShellCode:
 				print "starting Mainz / Bielefeld matching ..."
-				sys.stdout.flush()
+				stdout.flush()
 			match = self.decodersDict['mainz'].search( self.shellcode )
 			if match:
 				#self.write_hexdump(self.shellcode, "mainz")
-				key = struct.unpack('B',match.groups()[0])[0]
+				key = unpack('B',match.groups()[0])[0]
 				self.resultSet['xorkey'] = key
 				self.log_obj.log("found mainz/bielefeld xor decoder (key: %s)" % (key), 9, "info", False, True)
 				dec_shellcode = self.decrypt_xor(key, self.shellcode)
@@ -397,11 +391,11 @@ class shell_mgr:
 			### Match Heidelberg Shellcode
 			if self.displayShellCode:
 				print "starting Heidelberg matching ..."
-				sys.stdout.flush()
+				stdout.flush()
 			match = self.decodersDict['heidelberg'].search( self.shellcode )
 			if match:
 				#self.write_hexdump(self.shellcode, "heidelberg")
-				key = struct.unpack('B',match.groups()[0])[0]
+				key = unpack('B',match.groups()[0])[0]
 				self.resultSet['xorkey'] = key
 				self.log_obj.log("found heidelberg xor decoder (key: %s)" % (key), 9, "info", False, True)
 				dec_shellcode = self.decrypt_xor(key, self.shellcode)
@@ -412,13 +406,13 @@ class shell_mgr:
 			### Match Rothenburg / Schoenborn Shellcode
 			if self.displayShellCode:
 				print "starting Rothenburg / Schoenborn matching ..."
-				sys.stdout.flush()
+				stdout.flush()
 			match = self.decodersDict['rothenburg'].search( self.shellcode )
 			if match:
 				#self.write_hexdump(self.shellcode, "rothenburg")
 				keys = {}
 				for i in xrange(0,4):
-					keys[i] =  struct.unpack('B',match.groups()[i])[0]
+					keys[i] = unpack('B',match.groups()[i])[0]
 				self.resultSet['xorkey'] = keys
 				self.log_obj.log("found rothenburg/schoenborn xor decoder (keys: %s)" % (keys), 9, "info", False, True)
 				if self.handle_rothenburg( keys ):
@@ -426,12 +420,12 @@ class shell_mgr:
 			### Match Koeln Shellcode
 			if self.displayShellCode:
 				print "starting Koeln matching ..."
-				sys.stdout.flush()
+				stdout.flush()
 			match = self.decodersDict['koeln'].search( self.shellcode )
 			if match:
 				keys = {}
 				for i in xrange(0,4):
-					keys[i] =  struct.unpack('B',match.groups()[i])[0]
+					keys[i] = unpack('B',match.groups()[i])[0]
 				self.resultSet['xorkey'] = keys
 				self.log_obj.log("found koeln xor decoder (keys: %s)" % (keys), 9, "info", False, True)
 				if self.handle_koeln( keys ):
@@ -439,11 +433,11 @@ class shell_mgr:
 			### Match linkbot XOR shellcode (aka Lindau)
 			if self.displayShellCode:
 				print "starting Lindau matching ..."
-				sys.stdout.flush()
+				stdout.flush()
 			match = self.decodersDict['linkbot'].search( self.shellcode )
 			if match:
 				#self.write_hexdump(self.shellcode, "lindau")
-				key = struct.unpack('B',match.groups()[0])[0]
+				key = unpack('B',match.groups()[0])[0]
 				self.resultSet['xorkey'] = key
 				self.log_obj.log("found linkbot xor decoder (key: %s)" % (key), 9, "info", False, True)
 				dec_shellcode = self.decrypt_xor(key, self.shellcode)
@@ -452,10 +446,10 @@ class shell_mgr:
 			### Match schauenburg XOR shellcode
 			if self.displayShellCode:
 				print "starting schauenburg matching ..."
-				sys.stdout.flush()
+				stdout.flush()
 			match = self.decodersDict['schauenburg'].search( self.shellcode )
 			if match:
-				key = struct.unpack('B',match.groups()[0])[0]
+				key = unpack('B',match.groups()[0])[0]
 				self.resultSet['xorkey'] = key
 				self.log_obj.log("found schauenburg xor decoder (key: %s)" % (key), 9, "info", False, True)
 				dec_shellcode = self.decrypt_xor(key, self.shellcode)
@@ -464,11 +458,11 @@ class shell_mgr:
 			### Match plain1 shellcode
 			if self.displayShellCode:
 				print "starting plain1 matching ..."
-				sys.stdout.flush()
+				stdout.flush()
 			match = self.decodersDict['plain1'].search( self.shellcode )
 			if match:
 				raw_port = match.groups()[0]
-				port = struct.unpack('<H',raw_port)[0]
+				port = unpack('<H',raw_port)[0]
 				self.log_obj.log("found plain1 shellcode (port: %s)" % (port), 9, "info", False, True)
 				self.resultSet['port'] = port
 				self.resultSet['found'] = "bindport"
@@ -482,7 +476,7 @@ class shell_mgr:
 			### Match PexAlphaNumeric shellcode (mixedcase_w32sehgetpc)
 			if self.displayShellCode:
 				print "starting PexAlphaNumeric matching ..."
-				sys.stdout.flush()
+				stdout.flush()
 			match = self.decodersDict['pexalphanum'].search( self.shellcode )
 			if match:
 				decoder = match.groups()[0]
@@ -493,7 +487,7 @@ class shell_mgr:
 			### Alpha Upper shellcode
 			if self.displayShellCode:
 				print "starting Alpha_Upper matching ..."
-				sys.stdout.flush()
+				stdout.flush()
 			match = self.decodersDict['alphaupper'].search( self.shellcode )
 			if match:
 				decoder = match.groups()[0]
@@ -518,11 +512,11 @@ class shell_mgr:
 			### Match Lichtenfels shellcode
 			if self.displayShellCode:
 				print "starting Lichtenfels matching ..."
-				sys.stdout.flush()
+				stdout.flush()
 			match = self.decodersDict['lichtenfels'].search( self.shellcode )
 			if match:
 				#self.write_hexdump(self.shellcode, "lichtenfels")
-				key = struct.unpack('B',match.groups()[0])[0]
+				key = unpack('B',match.groups()[0])[0]
 				self.resultSet['xorkey'] = key
 				self.log_obj.log("found lichtenfels xor decoder (key: %s)" % (key), 9, "info", False, True)
 				dec_shellcode = self.decrypt_xor(key, self.shellcode)
@@ -531,10 +525,10 @@ class shell_mgr:
 			### Match Berlin shellcode
 			if self.displayShellCode:
 				print "starting Berlin matching ..."
-				sys.stdout.flush()
+				stdout.flush()
 			match = self.decodersDict['berlin'].search( self.shellcode )
 			if match:
-				key = struct.unpack('B',match.groups()[0])[0]
+				key = unpack('B',match.groups()[0])[0]
 				self.resultSet['xorkey'] = key
 				self.log_obj.log("found berlin xor decoder (key: %s)" % (key), 9, "info", False, True)
 				dec_shellcode = self.decrypt_xor(key, self.shellcode)
@@ -543,10 +537,10 @@ class shell_mgr:
 			### Match Furth shellcode
 			if self.displayShellCode:
 				print "starting Furth matching ..."
-				sys.stdout.flush()
+				stdout.flush()
 			match = self.decodersDict['furth'].search( self.shellcode )
 			if match:
-				key = struct.unpack('B',match.groups()[0])[0]
+				key = unpack('B',match.groups()[0])[0]
 				self.resultSet['xorkey'] = key
 				self.log_obj.log("found furth xor decoder (key: %s)" % (key), 9, "info", False, True)
 				dec_shellcode = self.decrypt_xor(key, self.shellcode)
@@ -557,11 +551,11 @@ class shell_mgr:
 			### Match Duesseldorf shellcode
 			if self.displayShellCode:
 				print "starting Duesseldorf matching ..."
-				sys.stdout.flush()
+				stdout.flush()
 			match = self.decodersDict['duesseldorf'].search( self.shellcode )
 			if match:
-				key1 = struct.unpack('B',match.groups()[0])[0]
-				key2 = struct.unpack('B',match.groups()[1])[0]
+				key1 = unpack('B',match.groups()[0])[0]
+				key2 = unpack('B',match.groups()[1])[0]
 				self.log_obj.log("found duesseldorf xor decoder (key1: %s, key2: %s)" % (key1, key2), 9, "info", False, True)
 				if key1 == key2:
 					self.resultSet['xorkey'] = key1
@@ -572,10 +566,10 @@ class shell_mgr:
 			### Match Siegburg shellcode
 			if self.displayShellCode:
 				print "starting Siegburg matching ..."
-				sys.stdout.flush()
+				stdout.flush()
 			match = self.decodersDict['siegburg'].search( self.shellcode )
 			if match:
-				key = struct.unpack('B',match.groups()[0])[0]
+				key = unpack('B',match.groups()[0])[0]
 				self.log_obj.log("found siegburg xor decoder (key: %s)" % (key), 9, "info", False, True)
 				self.resultSet['xorkey'] = key
 				dec_shellcode = self.decrypt_xor(key, self.shellcode)
@@ -584,12 +578,12 @@ class shell_mgr:
 			### Match Ulm shellcode
 			if self.displayShellCode:
 				print "starting Ulm matching ..."
-				sys.stdout.flush()
+				stdout.flush()
 			match = self.decodersDict['ulm'].search( self.shellcode )
 			if match:
 				keys = {}
 				for i in xrange(0,4):
-					keys[i] =  struct.unpack('B',match.groups()[i])[0]
+					keys[i] = unpack('B',match.groups()[i])[0]
 				self.resultSet['xorkey'] = keys
 				self.log_obj.log("found ulm xor decoder (keys: %s)" % (keys), 9, "info", False, True)
 				if self.handle_ulm( keys ):
@@ -597,10 +591,10 @@ class shell_mgr:
 			### Match Langenfeld shellcode
 			if self.displayShellCode:
 				print "starting Langenfeld matching ..."
-				sys.stdout.flush()
+				stdout.flush()
 			match = self.decodersDict['langenfeld'].search( self.shellcode )
 			if match:
-				key = struct.unpack('B',match.groups()[0])[0]
+				key = unpack('B',match.groups()[0])[0]
 				self.log_obj.log("found langenfeld xor decoder (key: %s)" % (key), 9, "info", False, True)
 				self.resultSet['xorkey'] = key
 				dec_shellcode = self.decrypt_xor(key, self.shellcode)
@@ -609,11 +603,11 @@ class shell_mgr:
 			### Match Bonn shellcode
 			if self.displayShellCode:
 				print "starting Bonn matching ..."
-				sys.stdout.flush()
+				stdout.flush()
 			match = self.decodersDict['bonn'].search( self.shellcode )
 			if match:
 				#self.write_hexdump(self.shellcode, "bonn")
-				key = struct.unpack('B',match.groups()[0])[0]
+				key = unpack('B',match.groups()[0])[0]
 				self.log_obj.log("found bonn xor decoder (key: %s)" % (key), 9, "info", False, True)
 				self.resultSet['xorkey'] = key
 				dec_shellcode = self.decrypt_xor(key, self.shellcode)
@@ -622,11 +616,11 @@ class shell_mgr:
 			### Match Unnamed BindShellcode1
 			if self.displayShellCode:
 				print "starting Unnamed BindShellcode1 matching ..."
-				sys.stdout.flush()
+				stdout.flush()
 			match = self.decodersDict['bindshell1'].search( self.shellcode )
 			if match:
 				raw_port = match.groups()[0]
-				port = struct.unpack('!H',raw_port)[0]
+				port = unpack('!H',raw_port)[0]
 				self.log_obj.log("found bindshell1 (port: %s)" % (port), 9, "info", True, True)
 				self.resultSet['port'] = port
 				self.resultSet['found'] = "bindport"
@@ -640,11 +634,11 @@ class shell_mgr:
 			### Match Unnamed BindShellcode2
 			if self.displayShellCode:
 				print "starting Unnamed BindShellcode2 matching ..."
-				sys.stdout.flush()
+				stdout.flush()
 			match = self.decodersDict['bindshell2'].search( self.shellcode )
 			if match:
 				raw_port = match.groups()[0]
-				port = struct.unpack('!H',raw_port)[0]
+				port = unpack('!H',raw_port)[0]
 				self.log_obj.log("found bindshell2 (port: %s)" % (port), 9, "info", True, True)
 				self.resultSet['port'] = port
 				self.resultSet['found'] = "bindport"
@@ -658,11 +652,11 @@ class shell_mgr:
 			### Match Unnamed BindShellcode3
 			if self.displayShellCode:
 				print "starting Unnamed BindShellcode3 matching ..."
-				sys.stdout.flush()
+				stdout.flush()
 			match = self.decodersDict['bindshell3'].search( self.shellcode2 )
 			if match:
 				raw_port = match.groups()[0]
-				port = struct.unpack('!H',raw_port)[0]
+				port = unpack('!H',raw_port)[0]
 				self.log_obj.log("found bindshell3 (port: %s)" % (port), 9, "info", True, True)
 				self.resultSet['port'] = port
 				self.resultSet['found'] = "bindport"
@@ -676,11 +670,11 @@ class shell_mgr:
 			### Match Unnamed BindShellcode4
 			if self.displayShellCode:
 				print "starting Unnamed BindShellcode4 matching ..."
-				sys.stdout.flush()
+				stdout.flush()
 			match = self.decodersDict['bindshell4'].search( self.shellcode )
 			if match:
 				raw_port = match.groups()[0]
-				port = struct.unpack('!H',raw_port)[0]
+				port = unpack('!H',raw_port)[0]
 				self.log_obj.log("found bindshell4 (port: %s)" % (port), 9, "info", True, True)
 				self.resultSet['port'] = port
 				self.resultSet['found'] = "bindport"
@@ -694,11 +688,11 @@ class shell_mgr:
 			### Match Unnamed BindShellcode5
 			if self.displayShellCode:
 				print "starting Unnamed BindShellcode5 matching ..."
-				sys.stdout.flush()
+				stdout.flush()
 			match = self.decodersDict['bindshell5'].search( self.shellcode2 )
 			if match:
 				raw_port = match.groups()[0]
-				port = struct.unpack('!H',raw_port)[0]
+				port = unpack('!H',raw_port)[0]
 				self.log_obj.log("found bindshell5 (port: %s)" % (port), 9, "info", True, True)
 				self.resultSet['port'] = port
 				self.resultSet['found'] = "bindport"
@@ -712,11 +706,11 @@ class shell_mgr:
 			### Match Unnamed BindShellcode6
 			if self.displayShellCode:
 				print "starting Unnamed BindShellcode6 matching ..."
-				sys.stdout.flush()
+				stdout.flush()
 			match = self.decodersDict['bindshell6'].search( self.shellcode2 )
 			if match:
 				raw_port = match.groups()[0]
-				port = struct.unpack('!H',raw_port)[0]
+				port = unpack('!H',raw_port)[0]
 				self.log_obj.log("found bindshell6 (port: %s)" % (port), 9, "info", True, True)
 				self.resultSet['port'] = port
 				self.resultSet['found'] = "bindport"
@@ -730,13 +724,13 @@ class shell_mgr:
 			### Match Unnamed AlphaNumeric Shellcode
 			if self.displayShellCode:
 				print "starting Base64Encoded PexAlphaNumeric matching ..."
-				sys.stdout.flush()
+				stdout.flush()
 			match = self.decodersDict['alphaNum'].search( self.shellcode )
 			if match:
 				payload = match.groups()[0]
 				payload += "=="
 				try:
-					decodedPayload = base64.decodestring(payload)
+					decodedPayload = decodestring(payload)
 					match = self.decodersDict['pexalphanum'].search( decodedPayload )
 					if match:
 						decoder = match.groups()[0]
@@ -749,13 +743,13 @@ class shell_mgr:
 			### Unnamed Plain URL Alpha
 			if self.displayShellCode:
 				print "starting Base64Encoded AlphaNumeric plain URL matching ..."
-				sys.stdout.flush()
+				stdout.flush()
 			match = self.decodersDict['alphaNum2'].search( self.shellcode )
 			if match:
 				payload = match.groups()[0]
 				payload += "=="
 				try:
-					decodedPayload = base64.decodestring(payload)
+					decodedPayload = decodestring(payload)
 					http_result = self.match_url( decodedPayload )
 					if http_result==1 and self.resultSet['result']:
 						return True
@@ -764,13 +758,13 @@ class shell_mgr:
 			### Match Alpha2 zero tolerance Shellcode
 			if self.displayShellCode:
 				print "starting Alpha2 zero tolerance matching ..."
-				sys.stdout.flush()
+				stdout.flush()
 			match = self.decodersDict['alpha2endchar'].search( self.shellcode )
 			if match:
 				endChar = match.groups()[0]
 				load = match.groups()[1]
 				payload = load[27:]
-				find_encoded = re.compile('(.*?)%s' % (endChar), re.S)
+				find_encoded = compile('(.*?)%s' % (endChar), reS)
 				match = find_encoded.search(payload)
 				if match:
 					encoded = match.groups()[0]
@@ -780,10 +774,10 @@ class shell_mgr:
 			### Match Bergheim shellcode
 			if self.displayShellCode:
 				print "starting Bergheim matching ..."
-				sys.stdout.flush()
+				stdout.flush()
 			match = self.decodersDict['bergheim'].search( self.shellcode )
 			if match:
-				key = struct.unpack('B',match.groups()[0])[0]
+				key = unpack('B',match.groups()[0])[0]
 				self.resultSet['xorkey'] = key
 				self.log_obj.log("found bergheim xor decoder (key: %s)" % (key), 9, "info", False, True)
 				dec_shellcode = self.decrypt_xor(key, self.shellcode)
@@ -794,10 +788,10 @@ class shell_mgr:
 		except KeyboardInterrupt:
 			raise
 		except:
-			f = StringIO.StringIO()
+			f = StringIO()
 			traceback.print_exc(file=f)
 			print f.getvalue()
-			sys.exit(0)
+			exit(0)
 		return False
 
 	def handle_alphaupper(self, decoder, payload):
@@ -827,7 +821,7 @@ class shell_mgr:
 				edx += 1
 				if ecx>=messageSize or ecx+1>=messageSize:
 					break
-				decodedMessage[edx] = struct.pack('B', (0xff&(struct.unpack('B', decodedMessage[ecx])[0]*0x10)^struct.unpack('B', decodedMessage[ecx+1])[0]))
+				decodedMessage[edx] = pack('B', (0xff&(unpack('B', decodedMessage[ecx])[0]*0x10)^unpack('B', decodedMessage[ecx+1])[0]))
 			dec_shellcode = "".join(decodedMessage)
 
 			m1 = self.decodersDict['alphaupper_bindport'].search( dec_shellcode )
@@ -843,7 +837,7 @@ class shell_mgr:
 
 		if m1:
 			raw_port = m1.groups()[0]
-			port = struct.unpack('!H',raw_port)[0]
+			port = unpack('!H',raw_port)[0]
 			self.resultSet['port'] = port
 			self.resultSet['found'] = "bindport"
 			bindportID = "%s%s" % (self.ownIP.replace('.',''), port)
@@ -856,15 +850,15 @@ class shell_mgr:
 			return True
 		if m2:
 			raw_ip = m2.groups()[0]
-			ip = struct.unpack('I',raw_ip)[0]
-			ip = struct.pack('I',ip)
-			ip = socket.inet_ntoa(ip)
+			ip = unpack('I',raw_ip)[0]
+			ip = pack('I',ip)
+			ip = inet_ntoa(ip)
 			if self.replace_locals and self.check_local(ip):
 				ip = self.attIP
 			elif self.check_local(ip):
 				self.resultSet['isLocalIP'] = True
 			raw_port = m2.groups()[1]
-			port = struct.unpack('!H',raw_port)[0]
+			port = unpack('!H',raw_port)[0]
 			self.log_obj.log("found alphaupper connectback (ip: %s, port: %s)" % (ip, port), 9, "info", False, True)
 			dlident = "%s%s" % (ip.replace('.',''), port)
 			self.resultSet['dlident'] = dlident
@@ -896,16 +890,16 @@ class shell_mgr:
 		decodedMessage = {}
 		for i in xrange(0, payloadSize, 2):
 			decodedMessage[i] = '\x90'
-			lowBit = (struct.unpack('B', payload[i])[0] - 1) ^ 0x41
-			highBit = struct.unpack('B', payload[i+1])[0] & 0x0f
+			lowBit = (unpack('B', payload[i])[0] - 1) ^ 0x41
+			highBit = unpack('B', payload[i+1])[0] & 0x0f
 			resultBit = lowBit | (highBit << 4)
-			decodedMessage[i/2] = struct.pack('B',resultBit)
+			decodedMessage[i/2] = pack('B',resultBit)
 		dec_shellcode = "".join(decodedMessage.values())
 
 		m = self.decodersDict['pexalphanum_bindport'].search( dec_shellcode )
 		if m:
 			raw_port = m.groups()[0]
-			port = struct.unpack('!H',raw_port)[0]
+			port = unpack('!H',raw_port)[0]
 			self.resultSet['port'] = port
 			self.resultSet['found'] = "bindport"
 			bindportID = "%s%s" % (self.ownIP.replace('.',''), port)
@@ -933,25 +927,25 @@ class shell_mgr:
 		decodedMessage = {}
 		for i in xrange(0, length, 2):
 			decodedMessage[i] = '\x90'
-			first = struct.unpack('B', payload[i])[0]
-			second = struct.unpack('B', payload[i+1])[0]
+			first = unpack('B', payload[i])[0]
+			second = unpack('B', payload[i+1])[0]
 			C = (first & 0xf0) >> 4
 			D = first & 0x0f
 			E = (second & 0xf0) >> 4
 			B = second & 0x0f
 			A = (D ^ E)
 			resultBit = (A << 4) + B
-			decodedMessage[i/2] = struct.pack('B',resultBit)
+			decodedMessage[i/2] = pack('B',resultBit)
 		decoded_shellcode = "".join(decodedMessage.values())
 		### connectback shell (reverse shell)
 		match = self.decodersDict['alpha2connback'].search( decoded_shellcode )
 		if match:
 			raw_ip = match.groups()[0]
-			ip = struct.unpack('I',raw_ip)[0]
-			ip = struct.pack('I',ip)
-			ip = socket.inet_ntoa(ip)
+			ip = unpack('I',raw_ip)[0]
+			ip = pack('I',ip)
+			ip = inet_ntoa(ip)
 			raw_port = match.groups()[1]
-			port = struct.unpack('!H',raw_port)[0]
+			port = unpack('!H',raw_port)[0]
 			if self.replace_locals and self.check_local(ip):
 				ip = self.attIP
 			elif self.check_local(ip):
@@ -970,7 +964,7 @@ class shell_mgr:
 		match = self.decodersDict['alpha2bind'].search( decoded_shellcode )
 		if match:
 			raw_port = match.groups()[0]
-			port = struct.unpack('!H',raw_port)[0]
+			port = unpack('!H',raw_port)[0]
 			self.resultSet['port'] = port
 			self.resultSet['found'] = "bindport"
 			bindportID = "%s%s" % (self.ownIP.replace('.',''), port)
@@ -1010,11 +1004,11 @@ class shell_mgr:
 		m = self.decodersDict['aachen_connback'].search( self.shellcode )
 		if m:
 			raw_port = m.groups()[0]
-			port = struct.unpack('!H',raw_port)[0]^port_key
+			port = unpack('!H',raw_port)[0]^port_key
 			raw_ip = m.groups()[1]
-			ip = struct.unpack('I',raw_ip)[0]
-			ip = struct.pack('I',ip^ip_key)
-			ip = socket.inet_ntoa(ip)
+			ip = unpack('I',raw_ip)[0]
+			ip = pack('I',ip^ip_key)
+			ip = inet_ntoa(ip)
 			if self.replace_locals and self.check_local(ip):
 				ip = self.attIP
 			elif self.check_local(ip):
@@ -1045,11 +1039,11 @@ class shell_mgr:
 		m = self.decodersDict['bergheim_connback'].search( dec_shellcode )
 		if m:
 			raw_port = m.groups()[0]
-			port = struct.unpack('!H',raw_port)[0]
+			port = unpack('!H',raw_port)[0]
 			raw_ip = m.groups()[1]
-			ip = struct.unpack('I',raw_ip)[0]
-			ip = struct.pack('I',ip)
-			ip = socket.inet_ntoa(ip)
+			ip = unpack('I',raw_ip)[0]
+			ip = pack('I',ip)
+			ip = inet_ntoa(ip)
 			if self.replace_locals and self.check_local(ip):
 				ip = self.attIP
 			elif self.check_local(ip):
@@ -1083,11 +1077,11 @@ class shell_mgr:
 			m = self.decodersDict['langenfeld_connback2'].search( dec_shellcode )
 		if m:
 			raw_port = m.groups()[0]
-			port = struct.unpack('!H',raw_port)[0]
+			port = unpack('!H',raw_port)[0]
 			raw_ip = m.groups()[1]
-			ip = struct.unpack('I',raw_ip)[0]
-			ip = struct.pack('I',ip)
-			ip = socket.inet_ntoa(ip)
+			ip = unpack('I',raw_ip)[0]
+			ip = pack('I',ip)
+			ip = inet_ntoa(ip)
 			if self.replace_locals and self.check_local(ip):
 				ip = self.attIP
 			elif self.check_local(ip):
@@ -1129,7 +1123,7 @@ class shell_mgr:
 		m = self.decodersDict['mainz_bindport1'].search( dec_shellcode )
 		if m:
 			raw_port = m.groups()[0]
-			port = struct.unpack('!H',raw_port)[0]
+			port = unpack('!H',raw_port)[0]
 			self.resultSet['port'] = port
 			self.resultSet['found'] = "bindport"
 			self.resultSet['result'] = True
@@ -1144,7 +1138,7 @@ class shell_mgr:
 		m = self.decodersDict['mainz_bindport2'].search( dec_shellcode )
 		if m:
 			raw_port = m.groups()[0]
-			port = struct.unpack('!H',raw_port)[0]
+			port = unpack('!H',raw_port)[0]
 			self.resultSet['port'] = port
 			self.resultSet['found'] = "bindport"
 			self.resultSet['result'] = True
@@ -1159,7 +1153,7 @@ class shell_mgr:
 		m = self.decodersDict['mainz_bindport3'].search( dec_shellcode )
 		if m:
 			raw_port = m.groups()[0]
-			port = struct.unpack('!H',raw_port)[0]
+			port = unpack('!H',raw_port)[0]
 			self.resultSet['port'] = port
 			self.resultSet['found'] = "bindport"
 			self.resultSet['result'] = True
@@ -1174,11 +1168,11 @@ class shell_mgr:
 		m = self.decodersDict['mainz_connback1'].search( dec_shellcode )
 		if m:
 			raw_port = m.groups()[0]
-			port = struct.unpack('!H',raw_port)[0]
+			port = unpack('!H',raw_port)[0]
 			raw_ip = m.groups()[1]
-			ip = struct.unpack('I',raw_ip)[0]
-			ip = struct.pack('I',ip)
-			ip = socket.inet_ntoa(ip)
+			ip = unpack('I',raw_ip)[0]
+			ip = pack('I',ip)
+			ip = inet_ntoa(ip)
 			if self.replace_locals and self.check_local(ip):
 				ip = self.attIP
 			elif self.check_local(ip):
@@ -1198,15 +1192,15 @@ class shell_mgr:
 		m = self.decodersDict['mainz_connback2'].search( dec_shellcode )
 		if m:
 			raw_ip = m.groups()[0]
-			ip = struct.unpack('I',raw_ip)[0]
-			ip = struct.pack('I',ip)
-			ip = socket.inet_ntoa(ip)
+			ip = unpack('I',raw_ip)[0]
+			ip = pack('I',ip)
+			ip = inet_ntoa(ip)
 			if self.replace_locals and self.check_local(ip):
 				ip = self.attIP
 			elif self.check_local(ip):
 				self.resultSet['isLocalIP'] = True
 			raw_port = m.groups()[1]
-			port = struct.unpack('!H',raw_port)[0]
+			port = unpack('!H',raw_port)[0]
 			self.log_obj.log("found bielefeld shellcode (key: %s port: %s, ip: %s)" % (key, port, ip), 9, "info", False, True)
 			dlident = "%s%s" % (ip.replace('.',''), port)
 			self.resultSet['dlident'] = dlident
@@ -1222,11 +1216,11 @@ class shell_mgr:
 		m = self.decodersDict['mainz_connback3'].search( dec_shellcode )
 		if m:
 			raw_port = m.groups()[0]
-			port = struct.unpack('!H',raw_port)[0]
+			port = unpack('!H',raw_port)[0]
 			raw_ip = m.groups()[1]
-			ip = struct.unpack('I',raw_ip)[0]
-			ip = struct.pack('I',ip)
-			ip = socket.inet_ntoa(ip)
+			ip = unpack('I',raw_ip)[0]
+			ip = pack('I',ip)
+			ip = inet_ntoa(ip)
 			if self.replace_locals and self.check_local(ip):
 				ip = self.attIP
 			elif self.check_local(ip):
@@ -1273,7 +1267,7 @@ class shell_mgr:
 		### Ulm bindport
 		if m1:
 			raw_port = m1.groups()[0]
-			port = struct.unpack('!H',raw_port)[0]
+			port = unpack('!H',raw_port)[0]
 			self.resultSet['port'] = port
 			self.resultSet['found'] = "bindport"
 			self.resultSet['result'] = True
@@ -1289,15 +1283,15 @@ class shell_mgr:
 			if m4:
 				m2 = m4
 			raw_ip = m2.groups()[0]
-			ip = struct.unpack('I',raw_ip)[0]
-			ip = struct.pack('I',ip)
-			ip = socket.inet_ntoa(ip)
+			ip = unpack('I',raw_ip)[0]
+			ip = pack('I',ip)
+			ip = inet_ntoa(ip)
 			if self.replace_locals and self.check_local(ip):
 				ip = self.attIP
 			elif self.check_local(ip):
 				self.resultSet['isLocalIP'] = True
 			raw_port = m2.groups()[1]
-			port = struct.unpack('!H',raw_port)[0]
+			port = unpack('!H',raw_port)[0]
 			self.log_obj.log("found ulm shellcode (key: %s, ip: %s, port: %s)" % (keys, ip, port), 9, "info", False, True)
 			dlident = "%s%s" % (ip.replace('.',''), port)
 			self.resultSet['dlident'] = dlident
@@ -1312,7 +1306,7 @@ class shell_mgr:
 		### Ulm bindport
 		if m3:
 			raw_port = m3.groups()[0]
-			port = struct.unpack('!H',raw_port)[0]
+			port = unpack('!H',raw_port)[0]
 			self.resultSet['port'] = port
 			self.resultSet['found'] = "bindport"
 			self.resultSet['result'] = True
@@ -1346,7 +1340,7 @@ class shell_mgr:
 		### Adenau bindport
 		if m1:
 			raw_port = m1.groups()[0]
-			port = struct.unpack('!H',raw_port)[0]
+			port = unpack('!H',raw_port)[0]
 			self.resultSet['port'] = port
 			self.resultSet['found'] = "bindport"
 			self.resultSet['result'] = True
@@ -1360,7 +1354,7 @@ class shell_mgr:
 		### Adenau bindport
 		if m2:
 			raw_port = m2.groups()[0]
-			port = struct.unpack('!H',raw_port)[0]
+			port = unpack('!H',raw_port)[0]
 			self.resultSet['port'] = port
 			self.resultSet['found'] = "bindport"
 			self.resultSet['result'] = True
@@ -1400,7 +1394,7 @@ class shell_mgr:
 		### Rothenburg bindport
 		if m1:
 			raw_port = m1.groups()[0]
-			port = struct.unpack('!H',raw_port)[0]
+			port = unpack('!H',raw_port)[0]
 			self.resultSet['port'] = port
 			self.resultSet['found'] = "bindport"
 			self.resultSet['result'] = True
@@ -1416,15 +1410,15 @@ class shell_mgr:
 			if m5:
 				m2 = m5
 			raw_ip = m2.groups()[0]
-			ip = struct.unpack('I',raw_ip)[0]
-			ip = struct.pack('I',ip)
-			ip = socket.inet_ntoa(ip)
+			ip = unpack('I',raw_ip)[0]
+			ip = pack('I',ip)
+			ip = inet_ntoa(ip)
 			if self.replace_locals and self.check_local(ip):
 				ip = self.attIP
 			elif self.check_local(ip):
 				self.resultSet['isLocalIP'] = True
 			raw_port = m2.groups()[1]
-			port = struct.unpack('!H',raw_port)[0]
+			port = unpack('!H',raw_port)[0]
 			self.log_obj.log("found schoenborn shellcode (key: %s, ip: %s, port: %s)" % (keys, ip, port), 9, "info", False, True)
 			dlident = "%s%s" % (ip.replace('.',''), port)
 			self.resultSet['dlident'] = dlident
@@ -1439,7 +1433,7 @@ class shell_mgr:
 		### Rothenburg bindport
 		if m3:
 			raw_port = m3.groups()[0]
-			port = struct.unpack('!H',raw_port)[0]
+			port = unpack('!H',raw_port)[0]
 			self.resultSet['port'] = port
 			self.resultSet['found'] = "bindport"
 			self.resultSet['result'] = True
@@ -1453,7 +1447,7 @@ class shell_mgr:
 		### Rothenburg bindport
 		if m4:
 			raw_port = m4.groups()[0]
-			port = struct.unpack('!H',raw_port)[0]
+			port = unpack('!H',raw_port)[0]
 			self.resultSet['port'] = port
 			self.resultSet['found'] = "bindport"
 			self.resultSet['result'] = True
@@ -1479,7 +1473,7 @@ class shell_mgr:
 		### Siegburg bindport
 		if m:
 			raw_port = m.groups()[0]
-			port = struct.unpack('!H',raw_port)[0]
+			port = unpack('!H',raw_port)[0]
 			self.log_obj.log("found siegburg shellcode (key: %s, port: %s)" % (key, port), 9, "info", False, True)
 			self.resultSet['port'] = port
 			self.resultSet['found'] = "bindport"
@@ -1510,7 +1504,7 @@ class shell_mgr:
 		### Koeln bindport
 		if m:
 			raw_port = m.groups()[0]
-			port = struct.unpack('!H',raw_port)[0]
+			port = unpack('!H',raw_port)[0]
 			self.resultSet['port'] = port
 			self.resultSet['found'] = "bindport"
 			self.resultSet['result'] = True
@@ -1535,16 +1529,16 @@ class shell_mgr:
 		m = self.decodersDict['linkbot_connback'].search( dec_shellcode )
 		if m:
 			raw_ip = m.groups()[0]
-			ip = struct.unpack('I',raw_ip)[0]
-			ip = struct.pack('I',ip)
-			ip = socket.inet_ntoa(ip)
+			ip = unpack('I',raw_ip)[0]
+			ip = pack('I',ip)
+			ip = inet_ntoa(ip)
 			if self.replace_locals and self.check_local(ip):
 				ip = self.attIP
 			elif self.check_local(ip):
 				self.resultSet['isLocalIP'] = True
 			raw_port = m.groups()[1]
-			port = struct.unpack('!H',raw_port)[0]
-			authkey = base64.b64encode(m.groups()[2])
+			port = unpack('!H',raw_port)[0]
+			authkey = b64encode(m.groups()[2])
 			self.log_obj.log('found lindau (linkbot) connectback transfer 1 (ip: %s port: %s auth: %s)' % (ip, port, authkey), 9, "info", False, True)
 			self.resultSet['found'] = "connectbackfiletrans"
 			self.resultSet['passwort'] = authkey
@@ -1559,16 +1553,16 @@ class shell_mgr:
 		m = self.decodersDict['linkbot_connback2'].search( dec_shellcode )
 		if m:
 			raw_ip = m.groups()[0]
-			ip = struct.unpack('I',raw_ip)[0]
-			ip = struct.pack('I',ip)
-			ip = socket.inet_ntoa(ip)
+			ip = unpack('I',raw_ip)[0]
+			ip = pack('I',ip)
+			ip = inet_ntoa(ip)
 			if self.replace_locals and self.check_local(ip):
 				ip = self.attIP
 			elif self.check_local(ip):
 				self.resultSet['isLocalIP'] = True
 			raw_port = m.groups()[1]
-			port = struct.unpack('!H',raw_port)[0]
-			authkey = base64.b64encode(m.groups()[2])
+			port = unpack('!H',raw_port)[0]
+			authkey = b64encode(m.groups()[2])
 			self.log_obj.log('found lindau (linkbot) connectback transfer 2 (ip: %s port: %s auth: %s)' % (ip, port, authkey), 9, "info", False, True)
 			self.resultSet['found'] = "connectbackfiletrans"
 			self.resultSet['passwort'] = authkey
@@ -1583,16 +1577,16 @@ class shell_mgr:
 		m = self.decodersDict['linkbot_connback3'].search( dec_shellcode )
 		if m:
 			raw_ip = m.groups()[1]
-			ip = struct.unpack('I',raw_ip)[0]
-			ip = struct.pack('I',ip)
-			ip = socket.inet_ntoa(ip)
+			ip = unpack('I',raw_ip)[0]
+			ip = pack('I',ip)
+			ip = inet_ntoa(ip)
 			if self.replace_locals and self.check_local(ip):
 				ip = self.attIP
 			elif self.check_local(ip):
 				self.resultSet['isLocalIP'] = True
 			raw_port = m.groups()[0]
-			port = struct.unpack('!H',raw_port)[0]
-			authkey = base64.b64encode(m.groups()[2])
+			port = unpack('!H',raw_port)[0]
+			authkey = b64encode(m.groups()[2])
 			self.log_obj.log('found lindau (linkbot) connectback transfer 3 (ip: %s port: %s auth: %s)' % (ip, port, authkey), 9, "info", False, True)
 			self.resultSet['found'] = "connectbackfiletrans"
 			self.resultSet['passwort'] = authkey
@@ -1618,7 +1612,7 @@ class shell_mgr:
 		m = self.decodersDict['schauenburg_bindport'].search( dec_shellcode )
 		if m:
 			raw_port = m.groups()[0]
-			port = struct.unpack('!H',raw_port)[0]
+			port = unpack('!H',raw_port)[0]
 			self.resultSet['port'] = port
 			self.resultSet['found'] = "bindport"
 			self.resultSet['result'] = True
@@ -1633,11 +1627,11 @@ class shell_mgr:
 		m = self.decodersDict['schauenburg_connback'].search( dec_shellcode )
 		if m:
 			raw_ip = m.groups()[0]
-			ip = struct.unpack('I',raw_ip)[0]
-			ip = struct.pack('I',ip)
-			ip = socket.inet_ntoa(ip)
+			ip = unpack('I',raw_ip)[0]
+			ip = pack('I',ip)
+			ip = inet_ntoa(ip)
 			raw_port = m.groups()[1]
-			port = struct.unpack('!H',raw_port)[0]
+			port = unpack('!H',raw_port)[0]
 			if self.replace_locals and self.check_local(ip):
 				ip = self.attIP
 			elif self.check_local(ip):
@@ -1746,11 +1740,11 @@ class shell_mgr:
 		m = self.decodersDict['lichtenfels_connback'].search( dec_shellcode )
 		if m:
 			raw_port = m.groups()[0]
-			port = struct.unpack('!H',raw_port)[0]
+			port = unpack('!H',raw_port)[0]
 			raw_ip = m.groups()[1]
-			ip = struct.unpack('I',raw_ip)[0]
-			ip = struct.pack('I',ip)
-			ip = socket.inet_ntoa(ip)
+			ip = unpack('I',raw_ip)[0]
+			ip = pack('I',ip)
+			ip = inet_ntoa(ip)
 			if self.replace_locals and self.check_local(ip):
 				ip = self.attIP
 			elif self.check_local(ip):
@@ -1785,14 +1779,14 @@ class shell_mgr:
 		if len(file_data)==0 or (extension=="MS03049" and (file_data.count('PIPE')>=2 or file_data.count('\x50\x00\x49\x00\x50\x00\x45')>=2)) or len(file_data)<100:
 			return
 		### generate md5 fingerprint of shellcode
-		hash = hashlib.md5(file_data)
+		hash = md5(file_data)
 		digest = hash.hexdigest()
 		if extension!=None:
 			filename = "hexdumps/%s-%s-%s.hex" % (extension.strip(), digest, ownPort)
 		else:
 			filename = "hexdumps/%s-%s.hex" % (digest, ownPort)
 		### write hexdump to disc
-		if not os.path.exists(filename):
+		if not ospath.exists(filename):
 			try:
 				fp = open(filename, 'a+')
 				fp.write(file_data)
@@ -1816,11 +1810,11 @@ class shell_mgr:
 				match = self.decodersDict['url'].search( dec_shellcode )
 			if self.displayShellCode:
 				print "starting AnyURL matching ..."
-				sys.stdout.flush()
+				stdout.flush()
 			if match:
 				#self.write_hexdump(self.shellcode, "http")
 				path = match.groups()[0]
-				url_obj = urlparse.urlsplit(path)
+				url_obj = urlsplit(path)
 				if self.config_dict['verbose_logging']==1:
 					self.log_obj.log("found path: %s (%s)" % (path, url_obj), 9, "debug", True, True)
 				### ('http', '192.168.116.2:5806', '/x.exe', '', '')
@@ -1851,7 +1845,7 @@ class shell_mgr:
 					new_url.append(url_obj[3])
 					new_url.append(url_obj[4])
 					new_url.append('')
-					found_url = urlparse.urlunparse(new_url)
+					found_url = urlunparse(new_url)
 					dlident = "%s%s%s" % (dl_host.replace('.',''),dl_port,url_obj[2].replace('/',''))
 					if len(url_obj[3])>0:
 						http_path = "%s?%s" % (url_obj[2], url_obj[3])
@@ -1939,7 +1933,7 @@ class shell_mgr:
 		try:
 			if self.displayShellCode:
 				print "starting embedded TFTP command matching ..."
-				sys.stdout.flush()
+				stdout.flush()
 			if not dec_shellcode:
 				ShellcodeToAnalyse = self.shellcode
 			else:
@@ -1979,7 +1973,7 @@ class shell_mgr:
 			### Match Plain FTP CMD 3 shellcode
 			if self.displayShellCode:
 				print "starting Plain FTP CMD 3 Shell matching ..."
-				sys.stdout.flush()
+				stdout.flush()
 			if not dec_shellcode:
 				ShellcodeToAnalyse = self.shellcode
 			else:
@@ -2077,7 +2071,7 @@ class shell_mgr:
 			### Match Plain FTP CMD Shell shellcode
 			if self.displayShellCode:
 				print "starting Plain FTP CMD Shell matching ..."
-				sys.stdout.flush()
+				stdout.flush()
 			match = self.decodersDict['ftpcmd'].search(self.shellcode)
 			if match:
 				#self.log_obj.log("Windows CMD FTP checking", 9, "crit", True, False)
@@ -2113,7 +2107,7 @@ class shell_mgr:
 			### Match Plain FTP CMD 2 Shell shellcode
 			if self.displayShellCode:
 				print "starting Plain FTP CMD 2 Shell matching ..."
-				sys.stdout.flush()
+				stdout.flush()
 			match = self.decodersDict['ftpcmd2'].search(self.shellcode)
 			if match:
 				#self.log_obj.log("Windows CMD FTP 2 checking", 9, "crit", True, False)
@@ -2164,7 +2158,7 @@ class shell_mgr:
 			### Match Plain TFTP 1 CMD Shell shellcode
 			if self.displayShellCode:
 				print "starting Plain TFTP 1 CMD Shell matching ..."
-				sys.stdout.flush()
+				stdout.flush()
 			if not dec_shellcode:
 				match = self.decodersDict['tftp1'].search(self.shellcode)
 			else:
@@ -2196,7 +2190,7 @@ class shell_mgr:
 			### Match Plain TFTP CMD Shell shellcode
 			if self.displayShellCode:
 				print "starting Plain TFTP 2 CMD Shell matching ..."
-				sys.stdout.flush()
+				stdout.flush()
 			if not dec_shellcode:
 				match = self.decodersDict['tftp'].search(self.shellcode)
 			else:
