@@ -30,11 +30,16 @@ import traceback
 import iprange
 import amun_logging
 
-import string
-
 class shell_mgr:
 	def __init__(self, decodersDict, shLogger, config_dict):
-		### configuration stuff
+		"""initialize shellcode decoder class
+
+		Keyword arguments:
+		decodersDict -- dictionary of all decoders from shellcodes/decoders.py
+		shLogger -- shellcode manager logging instance
+		config_dict -- dictionary containing amun configuration options
+
+		"""
 		self.config_dict = config_dict
 		### create local network ranges
 		self.localIPliste = []
@@ -44,31 +49,50 @@ class shell_mgr:
 		self.localIPliste.append( iprange.IPRange("169.254.0.0/16") )
 		self.localIPliste.append( iprange.IPRange("172.16.0.0/12") )
 		self.localIPliste.append( iprange.IPRange("192.168.0.0/16") )
-		### logging
+		### local logging instance
 		self.log_obj = amun_logging.amun_logging("shellcode_manager", shLogger)
 		### load shellcodes
 		self.decodersDict = decodersDict
 
 	def getNewResultSet(self, vulnName, attIP, ownIP):
-			resultSet = {}
-			resultSet['vulnname'] = vulnName
-			resultSet['result'] = False
-			resultSet['hostile_host'] = attIP
-			resultSet['own_host'] = ownIP
-			resultSet['found'] = "None"
-			resultSet['path'] = "None"
-			resultSet['host'] = "None"
-			resultSet['port'] = "None"
-			resultSet['xorkey'] = "None"
-			resultSet['username'] = "None"
-			resultSet['passwort'] = "None"
-			resultSet['dlident'] = "None"
-			resultSet['displayURL'] = "None"
-			resultSet['isLocalIP'] = False
-			resultSet['shellcodeName'] = "None"
-			return resultSet
+		"""Return a new empty result set to be used for detected shellcode
+
+		Keyword arguments:
+		vulnName -- name of the vulnerability that triggered the shellcode manager
+		attIP -- IP address of the potential attacker that the shellcode came from
+		ownIP -- IP address of amun honeypot that was attacked
+
+		"""
+		resultSet = {}
+		resultSet['vulnname'] = vulnName
+		resultSet['result'] = False
+		resultSet['hostile_host'] = attIP
+		resultSet['own_host'] = ownIP
+		resultSet['found'] = "None"
+		resultSet['path'] = "None"
+		resultSet['host'] = "None"
+		resultSet['port'] = "None"
+		resultSet['xorkey'] = "None"
+		resultSet['username'] = "None"
+		resultSet['passwort'] = "None"
+		resultSet['dlident'] = "None"
+		resultSet['displayURL'] = "None"
+		resultSet['isLocalIP'] = False
+		resultSet['shellcodeName'] = "None"
+		return resultSet
 
 	def start_matching(self, vulnResult, attIP, ownIP, ownPort, replace_locals=0, displayShellCode=False):
+		"""Start matching the received potential shellcode against known obfuscation techniques
+
+		Keyword arguments:
+		vulnResult -- dictionary of results returned by the vulnerability module that reached the shellcode stage
+		attIP -- Attacker IP address
+		ownIP -- Amun IP address
+		ownPort -- Amun port of vulnerability that was attacked
+		replace_locals -- if True every local IP address will be replaced by the attacker IP address
+		displayShellcode -- if True will display each type of shellcode that is tested
+
+		"""
 		try:
 			self.shellcode = str(vulnResult['shellcode']).replace('\0','').strip()
 			self.shellcode2 = str(vulnResult['shellcode']).strip()
@@ -76,11 +100,10 @@ class shell_mgr:
 			self.ownIP = ownIP
 			self.replace_locals = replace_locals
 			self.displayShellCode = displayShellCode
-
+			### list of all results
 			self.overallResults = []
 			self.resultSet = self.getNewResultSet(vulnResult['vulnname'], attIP, ownIP)
-
-			### erst http url checken
+			### check for http urls first
 			http_result = self.match_url("None")
 			if http_result==1 and self.resultSet['result']:
 				self.overallResults.append(self.resultSet)
@@ -110,17 +133,27 @@ class shell_mgr:
 			raise
 
 	def start_shellcommand_matching(self, vulnResult, attIP, ownIP, ownPort, replace_locals, displayShellCode):
+		"""Start matching received shell commands (e.g. from bindshell) for known stuff
+
+		Keyword arguments:
+		vulnResult -- dictionary of results returned by the vulnerability module that reached the shellcode stage
+		attIP -- Attacker IP address
+		ownIP -- Amun IP address
+		ownPort -- Amun port of vulnerability that was attacked
+		replace_locals -- if True every local IP address will be replaced by the attacker IP address
+		displayShellcode -- if True will display each type of shellcode that is tested
+
+		"""
 		try:
 			self.shellcode = str(vulnResult['shellcode']).strip()
 			self.attIP = attIP
 			self.ownIP = ownIP
 			self.replace_locals = replace_locals
 			self.displayShellCode = displayShellCode
-
+			### list of all results
 			self.overallResults = []
 			self.resultSet = self.getNewResultSet(vulnResult['vulnname'], attIP, ownIP)
-
-			### first check http url
+			### check for http urls first
 			http_result = self.match_url("None")
 			if http_result==1 and self.resultSet['result']:
 				self.overallResults.append(self.resultSet)
@@ -140,7 +173,7 @@ class shell_mgr:
 			self.resultSet = self.getNewResultSet(vulnResult['vulnname'], attIP, ownIP)
 			self.shellcode = str(vulnResult['shellcode']).strip()
 			### old plain FTP matchen
-			#if self.macht_FTPold() and self.resultSet['result']:
+			#if self.match_FTPold() and self.resultSet['result']:
 			#	self.overallResults.append(self.resultSet)
 			### no match than write hexdump
 			if len(self.overallResults)<=0:
@@ -150,16 +183,38 @@ class shell_mgr:
 			raise
 
 	def decXorHelper(self, char, key):
+		"""Perform XOR command of char and key
+
+		Keyword arguments:
+		char -- character to XOR
+		key -- XOR key to use
+
+		"""
 		unpack = struct.unpack
 		pack = struct.pack
 		return pack('B', unpack('B',char)[0] ^ key )
 
 	def decrypt_xor(self, key, data):
+		"""Decrypt given data using a simple single byte XOR key
+
+		Keyword arguments:
+		key -- XOR key
+		data -- character string to XOR with given key
+
+		"""
 		unpack = struct.unpack
 		pack = struct.pack
 		return "".join([self.decXorHelper(char,key) for char in data])
 
 	def decrypt_multi_xor(self, keys, data, position=0):
+		"""Decrypt given data using a multi-byte XOR key starting at given position
+
+		Keyword arguments:
+		keys -- list of bytes to be used as XOR keys
+		data -- character string to XOR
+		position -- position where to start in given string to XOR (default 0)
+
+		"""
 		unpack = struct.unpack
 		pack = struct.pack
 		decrypted = []
@@ -170,6 +225,12 @@ class shell_mgr:
 		return "".join(decrypted)
 
 	def checkFTP(self, cmd):
+		"""Check given command for known FTP shell commands
+
+		Keyword arguments:
+		cmd -- received command string to check
+
+		"""
 		if cmd.startswith('cmd /c echo open'):
 			cmd_liste = cmd.split(' ')
 			target_ip = cmd_liste[4]
@@ -199,6 +260,9 @@ class shell_mgr:
 		return False
 
 	def match_shellcodes(self):
+		"""Match found shellcode (self.shellcode) against known shellcode obfuscation techniques
+
+		"""
 		try:
 			### Match Wuerzburg Shellcode
 			if self.displayShellCode:
@@ -341,7 +405,8 @@ class shell_mgr:
 				self.resultSet['xorkey'] = key
 				self.log_obj.log("found heidelberg xor decoder (key: %s)" % (key), 9, "info", False, True)
 				dec_shellcode = self.decrypt_xor(key, self.shellcode)
-				#self.write_hexdump(dec_shellcode, "heidelberg")
+				### DEBUG
+				self.write_hexdump(dec_shellcode, "heidelberg")
 				if self.handle_heidelberg(key, dec_shellcode):
 					return True
 			### Match Rothenburg / Schoenborn Shellcode
@@ -724,7 +789,7 @@ class shell_mgr:
 				dec_shellcode = self.decrypt_xor(key, self.shellcode)
 				if self.handle_bergheim(key, dec_shellcode):
 					return True
-			### Ende
+			### End
 			self.resultSet['result'] = False
 		except KeyboardInterrupt:
 			raise
@@ -736,13 +801,16 @@ class shell_mgr:
 		return False
 
 	def handle_alphaupper(self, decoder, payload):
-		### Metasploit Alpha_Upper
-		#payloadSize = len(payload)
+		"""Metasploit Alpha_Upper shellcode obfuscation technique
+
+		Keyword arguments:
+		decoder -- decoding routine that matched the initial shellcode check
+		payload -- payload that was extracted by the initial match
+
+		"""
 		messageSize = len(decoder)
-		#self.log_obj.log("AlphaUpper payload size: %s" % (payloadSize), 9, "debug", False, True)
 		self.log_obj.log("AlphaUpper payload size: %s" % (messageSize), 9, "debug", False, True)
 
-		#decodedMessage = list(payload)
 		decodedMessage = list(decoder)
 
 		ecx = -5
@@ -814,7 +882,13 @@ class shell_mgr:
 			return False
 
 	def handle_pexalphanum(self, decoder, payload):
-		### Metasploit PexAlphaNumeric
+		"""Metasploit PexAlphaNumeric shellcode obfuscation technique
+
+		Keyword arguments:
+		decoder -- decoding routine that matched the initial shellcode check
+		payload -- payload that was extracted by the initial match
+
+		"""
 		payloadSize = len(payload)
 		self.log_obj.log("AlphaNum payload size: %s" % (payloadSize), 9, "debug", False, True)
 		if payloadSize % 2 != 0:
@@ -847,7 +921,13 @@ class shell_mgr:
 			return False
 
 	def handle_alpha2zero(self, payload, length):
-		### Metasploit Alpha2 zero tolerance
+		"""Metasploit Alpha2 zero tolerance shellcode obfuscation technique
+
+		Keyword arguments:
+		payload -- payload that was extracted by the initial match
+		length -- length of encoded shellcode
+
+		"""
 		if length % 2 != 0:
 			length -= 1
 		decodedMessage = {}
@@ -904,6 +984,12 @@ class shell_mgr:
 		return False
 
 	def handle_wuerzburg(self, key):
+		"""Wuerzburg single byte XOR shellcode decoder
+
+		Keyword arguments:
+		key -- XOR key to use
+
+		"""
 		m = False
 		filename = "None"
 		dec_shellcode = self.decrypt_xor(key, self.shellcode)
@@ -913,6 +999,13 @@ class shell_mgr:
 		return filename
 
 	def handle_aachen(self, ip_key, port_key):
+		"""Aachen two XOR keys shellcode decoder
+
+		Keyword arguments:
+		ip_key -- XOR key for the encoded IP address
+		port_key -- XOR key for the encoded network port
+
+		"""
 		m = False
 		m = self.decodersDict['aachen_connback'].search( self.shellcode )
 		if m:
@@ -940,6 +1033,13 @@ class shell_mgr:
 			return False
 
 	def handle_bergheim(self, key, dec_shellcode):
+		"""Bergheim single byte XOR shellcode decoder
+
+		Keyword arguments:
+		key -- XOR key that was used
+		dec_shellcode -- already decoded shellcode
+
+		"""
 		m = False
 		### bergheim ConnectBack Shellcode
 		m = self.decodersDict['bergheim_connback'].search( dec_shellcode )
@@ -969,6 +1069,13 @@ class shell_mgr:
 
 
 	def handle_langenfeld(self, key, dec_shellcode):
+		"""Langenfeld single byte XOR shellcode decoder
+
+		Keyword arguments:
+		key -- XOR key that was used
+		dec_shellcode -- already decoded shellcode
+
+		"""
 		m = False
 		### langenfeld ConnectBack Shellcode
 		m = self.decodersDict['langenfeld_connback'].search( dec_shellcode )
@@ -999,9 +1106,24 @@ class shell_mgr:
 		return False
 
 	def handle_heidelberg(self, key, dec_shellcode):
+		"""Heidelberg single byte XOR shellcode decoder
+
+		Keyword arguments:
+		key -- XOR key
+		dec_shellcode -- already decoded shellcode
+
+		FIXME: shellcode information need to be extracted
+		"""
 		return True
 
 	def handle_bielefeld(self, key, dec_shellcode):
+		"""Bielefeld single byte XOR shellcode decoder
+
+		Keyword arguments:
+		key -- XOR key
+		dec_shellcode -- already decoded shellcode
+
+		"""
 		m = False
 		### Mainz / Bielefeld - BindPort Shellcode 1
 		m = self.decodersDict['mainz_bindport1'].search( dec_shellcode )
@@ -1127,6 +1249,12 @@ class shell_mgr:
 		return False
 
 	def handle_ulm(self, keys):
+		"""Ulm multi-byte XOR shellcode decoder
+
+		Keyword arguments:
+		keys -- multi-byte XOR key
+
+		"""
 		m1 = False
 		m2 = False
 		m3 = False
@@ -1142,6 +1270,7 @@ class shell_mgr:
 			if m1 or m2 or m3 or m4:
 				break
 			i += 1
+		### Ulm bindport
 		if m1:
 			raw_port = m1.groups()[0]
 			port = struct.unpack('!H',raw_port)[0]
@@ -1155,6 +1284,7 @@ class shell_mgr:
 			self.resultSet['displayURL'] = bindURL
 			self.resultSet['shellcodeName'] = "ulm"
 			return True
+		### Ulm connectback shellcode
 		if m2 or m4:
 			if m4:
 				m2 = m4
@@ -1179,6 +1309,7 @@ class shell_mgr:
 			self.resultSet['displayURL'] = cbackURL
 			self.resultSet['shellcodeName'] = "ulm"
 			return True
+		### Ulm bindport
 		if m3:
 			raw_port = m3.groups()[0]
 			port = struct.unpack('!H',raw_port)[0]
@@ -1195,6 +1326,12 @@ class shell_mgr:
 		return False
 
 	def handle_adenau(self, keys):
+		"""Adenau multi-byte XOR shellcode decoder
+
+		Keyword arguments:
+		keys -- multi-byte XOR key
+
+		"""
 		m1 = False
 		m2 = False
 		i = 0
@@ -1206,6 +1343,7 @@ class shell_mgr:
 			if m1 or m2:
 				break
 			i += 1
+		### Adenau bindport
 		if m1:
 			raw_port = m1.groups()[0]
 			port = struct.unpack('!H',raw_port)[0]
@@ -1219,6 +1357,7 @@ class shell_mgr:
 			self.resultSet['displayURL'] = bindURL
 			self.resultSet['shellcodeName'] = "adenau"
 			return True
+		### Adenau bindport
 		if m2:
 			raw_port = m2.groups()[0]
 			port = struct.unpack('!H',raw_port)[0]
@@ -1235,6 +1374,12 @@ class shell_mgr:
 		return False
 
 	def handle_rothenburg(self, keys):
+		"""Rothenburg multi-byte XOR shellcode decoder
+
+		Keyword arguments:
+		keys -- multi-byte XOR key
+
+		"""
 		m1 = False
 		m2 = False
 		m3 = False
@@ -1252,6 +1397,7 @@ class shell_mgr:
 			if m1 or m2 or m3 or m4 or m5:
 				break
 			i += 1
+		### Rothenburg bindport
 		if m1:
 			raw_port = m1.groups()[0]
 			port = struct.unpack('!H',raw_port)[0]
@@ -1265,6 +1411,7 @@ class shell_mgr:
 			self.resultSet['displayURL'] = bindURL
 			self.resultSet['shellcodeName'] = "rothenburg"
 			return True
+		### Rothenburg connectback shellcode
 		if m2 or m5:
 			if m5:
 				m2 = m5
@@ -1289,6 +1436,7 @@ class shell_mgr:
 			self.resultSet['displayURL'] = cbackURL
 			self.resultSet['shellcodeName'] = "schoenborn"
 			return True
+		### Rothenburg bindport
 		if m3:
 			raw_port = m3.groups()[0]
 			port = struct.unpack('!H',raw_port)[0]
@@ -1302,6 +1450,7 @@ class shell_mgr:
 			self.resultSet['displayURL'] = bindURL
 			self.resultSet['shellcodeName'] = "rothenburg"
 			return True
+		### Rothenburg bindport
 		if m4:
 			raw_port = m4.groups()[0]
 			port = struct.unpack('!H',raw_port)[0]
@@ -1315,12 +1464,19 @@ class shell_mgr:
 			self.resultSet['displayURL'] = bindURL
 			self.resultSet['shellcodeName'] = "schoenborn"
 			return True
-		else:
-			return False
+		return False
 
 	def handle_siegburg(self, key, dec_shellcode):
+		"""Siegburg single byte XOR shellcode decoder
+
+		Keyword arguments:
+		key -- XOR key
+		dec_shellcode -- already decoded shellcode
+
+		"""
 		m = False
 		m = self.decodersDict['siegburg_bindshell'].search( dec_shellcode)
+		### Siegburg bindport
 		if m:
 			raw_port = m.groups()[0]
 			port = struct.unpack('!H',raw_port)[0]
@@ -1334,10 +1490,15 @@ class shell_mgr:
 			self.resultSet['displayURL'] = bindURL
 			self.resultSet['shellcodeName'] = "siegburg"
 			return True
-		else:
-			return False
+		return False
 
 	def handle_koeln(self, keys):
+		"""Koeln multi-byte XOR shellcode decoder
+
+		Keyword arguments:
+		keys -- multi-byte XOR key
+
+		"""
 		m = False
 		i = 0
 		while i<=len(keys):
@@ -1346,6 +1507,7 @@ class shell_mgr:
 			if m:
 				break
 			i += 1
+		### Koeln bindport
 		if m:
 			raw_port = m.groups()[0]
 			port = struct.unpack('!H',raw_port)[0]
@@ -1359,10 +1521,16 @@ class shell_mgr:
 			self.resultSet['displayURL'] = bindURL
 			self.resultSet['shellcodeName'] = "koeln"
 			return True
-		else:
-			return False
+		return False
 
 	def handle_linkbot(self, key, dec_shellcode):
+		"""Linkbot single byte XOR shellcode decoder
+
+		Keyword arguments:
+		key -- XOR key
+		dec_shellcode -- already decoded shellcode
+
+		"""
 		m = False
 		m = self.decodersDict['linkbot_connback'].search( dec_shellcode )
 		if m:
@@ -1439,6 +1607,13 @@ class shell_mgr:
 		return False
 
 	def handle_schauenburg(self, key, dec_shellcode):
+		"""Schauenburg single byte XOR shellcode decoder
+
+		Keyword arguments:
+		key -- XOR key
+		dec_shellcode -- already decoded shellcode
+
+		"""
 		m = False
 		m = self.decodersDict['schauenburg_bindport'].search( dec_shellcode )
 		if m:
@@ -1481,6 +1656,13 @@ class shell_mgr:
 		return False
 
 	def handle_berlin(self, key, dec_shellcode):
+		"""Berlin single byte XOR shellcode decoder
+
+		Keyword arguments:
+		key -- XOR key
+		dec_shellcode -- already decoded shellcode
+
+		"""
 		m = self.decodersDict['ftpcmd'].search( dec_shellcode )
 		if m:
 			self.log_obj.log("Windows CMD FTP checking", 9, "crit", True, False)
@@ -1513,8 +1695,16 @@ class shell_mgr:
 			self.resultSet['displayURL'] = ftpURL
 			self.resultSet['shellcodeName'] = "berlin"
 			return True
+		return False
 
 	def handle_leimbach(self, key, dec_shellcode):
+		"""Leimbach single byte XOR shellcode decoder
+
+		Keyword arguments:
+		key -- XOR key
+		dec_shellcode -- already decoded shellcode
+
+		"""
 		m = self.decodersDict['tftp'].search( dec_shellcode )
 		if m:
 			tftp_command = m.groups()[0]
@@ -1543,8 +1733,16 @@ class shell_mgr:
 		http_result = self.match_url( dec_shellcode )
 		if http_result==1 and self.resultSet['result']:
 			return True
+		return False
 
 	def handle_lichtenfels(self, key, dec_shellcode):
+		"""Lichtenfels single byte XOR shellcode decoder
+
+		Keyword arguments:
+		key -- XOR key
+		dec_shellcode -- already decoded shellcode
+
+		"""
 		m = self.decodersDict['lichtenfels_connback'].search( dec_shellcode )
 		if m:
 			raw_port = m.groups()[0]
@@ -1568,26 +1766,32 @@ class shell_mgr:
 			self.resultSet['displayURL'] = connbackURL
 			self.resultSet['shellcodeName'] = "lichtenfels"
 			return True
-		else:
-			return False
+		return False
 
 	def write_hexdump(self, shellcode=None, extension=None, ownPort="None"):
+		"""Write unknown/undetected shellcode as a hexdump to disc for later analysis
+
+		Keyword arguments:
+		shellcode -- specific shellcode that was not detected (default None, i.e. use global self.shellcode)
+		extension -- use specifial extension on stored hexdump (default None)
+		ownPort -- attach the network port of the vulnerability that was exploited to filename (default "None")
+
+		"""
 		if not shellcode:
 			file_data = "".join(self.shellcode)
 		else:
 			file_data = "".join(shellcode)
-
 		### ignore zero size hexdumps
 		if len(file_data)==0 or (extension=="MS03049" and (file_data.count('PIPE')>=2 or file_data.count('\x50\x00\x49\x00\x50\x00\x45')>=2)) or len(file_data)<100:
 			return
-
-		### md5
+		### generate md5 fingerprint of shellcode
 		hash = hashlib.md5(file_data)
 		digest = hash.hexdigest()
 		if extension!=None:
 			filename = "hexdumps/%s-%s-%s.hex" % (extension.strip(), digest, ownPort)
 		else:
 			filename = "hexdumps/%s-%s.hex" % (digest, ownPort)
+		### write hexdump to disc
 		if not os.path.exists(filename):
 			try:
 				fp = open(filename, 'a+')
@@ -1596,11 +1800,17 @@ class shell_mgr:
 				self.log_obj.log("(%s) no match, writing hexdump (%s :%s) - %s" % (self.attIP, digest, len(file_data), self.resultSet['vulnname']), 9, "warn", True, True)
 			except IOError, e:
 				self.log_obj.log("(%s) failed writing hexdump (%s) (%s :%s) - %s" % (self.attIP, e, digest, len(file_data), self.resultSet['vulnname']), 9, "crit", True, True)
-		return
+				return False
+		return True
 
-	def match_url(self, dec_shellcode="None"):
+	def match_url(self, dec_shellcode=None):
+		"""Check given shellcode for known http urls
+
+		Keyword arguments:
+		dec_shellcode -- decoded shellcode (default None, i.e. use global self.shellcode)
+		"""
 		try:
-			if dec_shellcode=="None":
+			if not dec_shellcode:
 				match = self.decodersDict['url'].search( self.shellcode )
 			else:
 				match = self.decodersDict['url'].search( dec_shellcode )
@@ -1615,7 +1825,6 @@ class shell_mgr:
 					self.log_obj.log("found path: %s (%s)" % (path, url_obj), 9, "debug", True, True)
 				### ('http', '192.168.116.2:5806', '/x.exe', '', '')
 				### ('ftp', 'bla:bla@natout.sfldlib.org:22679', '/bot.exe', '', '')
-				#if (url_obj[0]!='http' and url_obj[0]!='ftp') or len(url_obj[1])<7 or len(url_obj[2])<1 or url_obj[1].count(':')==0:
 				if (url_obj[0]!='http' and url_obj[0]!='ftp') or len(url_obj[1])<7 or len(url_obj[2])<1:
 					self.log_obj.log("(%s) found unknown/incomplete download URL: %s (%s)" % (self.attIP, match.groups(),self.resultSet['vulnname']), 9, "div", True, False)
 					return 2
@@ -1689,6 +1898,12 @@ class shell_mgr:
 			raise
 
 	def checkFTPcmdFilename(self, filename):
+		"""Extract filename from FTP command (remove leftovers)
+
+		Keyword arguments:
+		filename -- string with filename that needs to be cleared from leftovers
+
+		"""
 		try:
 			if filename.find('&echo')>0:
 				filelist = filename.split('&echo')
@@ -1698,6 +1913,11 @@ class shell_mgr:
 			raise
 
 	def check_local(self, host):
+		"""Check if a given host IP address is a local address
+
+		Keyword arguments:
+		host -- IP address to check
+		"""
 		try:
 			for localAddress in self.localIPliste:
 				if localAddress.contains(str(host)):
@@ -1710,11 +1930,17 @@ class shell_mgr:
 			return False
 
 	def match_embeddedTFTP(self, dec_shellcode=None):
+		"""Check if given shellcode contains TFTP commands
+
+		Keyword arguments:
+		dec_shellcode -- decoded shellcode to search for TFTP commands (default None, i.e. use global self.shellcode)
+
+		"""
 		try:
 			if self.displayShellCode:
 				print "starting embedded TFTP command matching ..."
 				sys.stdout.flush()
-			if dec_shellcode==None:
+			if not dec_shellcode:
 				ShellcodeToAnalyse = self.shellcode
 			else:
 				ShellcodeToAnalyse = dec_shellcode
@@ -1742,14 +1968,19 @@ class shell_mgr:
 		except KeyboardInterrupt:
 			raise
 
-
 	def match_plainFTP(self, dec_shellcode=None):
+		"""Check if given shellcode contains FTP commands
+
+		Keyword arguments:
+		dec_shellcode -- decoded shellcode to search for TFTP commands (default None, i.e. use global self.shellcode)
+
+		"""
 		try:
 			### Match Plain FTP CMD 3 shellcode
 			if self.displayShellCode:
 				print "starting Plain FTP CMD 3 Shell matching ..."
 				sys.stdout.flush()
-			if dec_shellcode==None:
+			if not dec_shellcode:
 				ShellcodeToAnalyse = self.shellcode
 			else:
 				ShellcodeToAnalyse = dec_shellcode
@@ -1770,7 +2001,7 @@ class shell_mgr:
 					self.log_obj.log("no IP: %s" % (ip) , 6, "crit", True, True)
 					self.log_obj.log("complete shellcode: %s" % ([dec_shellcode]), 6, "crit", True, False)
 				port = match.groups()[1]
-				if port==None:
+				if not port:
 					port = 21
 					self.log_obj.log("no Port setting default 21" , 6, "crit", True, True)
 				if int(port)<1 or int(port)>65550:
@@ -1836,7 +2067,12 @@ class shell_mgr:
 		except KeyboardInterrupt:
 			raise
 
-	def macht_FTPold(self):
+	def match_FTPold(self):
+		"""Old method to check for FTP commands, currently not used
+
+		Deprecated and can be removed in the future
+
+		"""
 		try:
 			### Match Plain FTP CMD Shell shellcode
 			if self.displayShellCode:
@@ -1889,7 +2125,7 @@ class shell_mgr:
 				elif self.check_local(ip):
 					self.resultSet['isLocalIP'] = True
 				port = match.groups()[1]
-				if port==None:
+				if not port:
 					port = 21
 				user = match.groups()[2]
 				passw = match.groups()[3]
@@ -1918,12 +2154,18 @@ class shell_mgr:
 			raise
 
 	def match_plainTFTP(self, dec_shellcode=None):
+		"""Check for plain TFTP commands in given shellcode
+
+		Keyword arguments:
+		dec_shellcode -- decoded shellcode (default None, i.e. use global self.shellcode)
+
+		"""
 		try:
 			### Match Plain TFTP 1 CMD Shell shellcode
 			if self.displayShellCode:
 				print "starting Plain TFTP 1 CMD Shell matching ..."
 				sys.stdout.flush()
-			if dec_shellcode==None:
+			if not dec_shellcode:
 				match = self.decodersDict['tftp1'].search(self.shellcode)
 			else:
 				match = self.decodersDict['tftp1'].search(dec_shellcode)
@@ -1955,7 +2197,7 @@ class shell_mgr:
 			if self.displayShellCode:
 				print "starting Plain TFTP 2 CMD Shell matching ..."
 				sys.stdout.flush()
-			if dec_shellcode==None:
+			if not dec_shellcode:
 				match = self.decodersDict['tftp'].search(self.shellcode)
 			else:
 				match = self.decodersDict['tftp'].search(dec_shellcode)
