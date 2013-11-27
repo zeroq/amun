@@ -39,11 +39,23 @@ import optparse
 import subprocess
 import hashlib
 
-### NOTICE: local imports at the bottom ###
+""" NOTICE: local imports at the bottom """
 
 class amunServer(asynchat.async_chat):
-
 	def __init__(self, address, type, currentSockets, decodersDict, event_dict, vuln_modules, divLogger, config_dict):
+		"""Amun honeypot network server class initialization
+
+		Keyword arguments:
+		address -- tuple containing IP address and network port the server should listen on
+		type -- protocol the server uses (tcp or udp)
+		currentSockets -- list of currently open sockets
+		decodersDict -- dictionary of shellcode decoding routines
+		event_dict -- dictionary to store certain events (e.g. download events, exploit events, ...)
+		vuln_modules -- list of loaded vulnerability modules
+		divLogger -- dictionary of logging instances
+		config_dict -- dictionary of configuration options
+
+		"""
 		asynchat.async_chat.__init__(self)
 		self.address = address
 		self.divLogger = divLogger
@@ -290,63 +302,27 @@ def check_download_events(event_dict, config_dict, currentDownloads, bindports, 
 	except KeyboardInterrupt:
 		raise
 
-def check_refused_ips(event_dict, refused_timeout, serverLogger, verbose_logging):
-	### check refused ips
-	try:
-		refused_keys = event_dict['refused_connections'].keys()
-		for key in refused_keys:
-			logged_time = event_dict['refused_connections'][key]
-			current_time = int(time.time())
-			difference = current_time - int(logged_time)
-			if difference >= refused_timeout:
-				del event_dict['refused_connections'][key]
-				if verbose_logging==1:
-					log("removing refused IP %s (blocktime: %s)" % (key, difference), 0, "debug", serverLogger, True)
-	except KeyboardInterrupt:
-		raise
+def generic_check_unblock_ips(event_dict, event_key, block_time, logger, verbose_logging):
+	"""Check if currently blocked IP addresses can be unblocked again
 
-def check_timeout_ips(event_dict, timeout_blocktime, serverLogger, verbose_logging):
-	### check timeouted ips
-	try:
-		timeouted_keys = event_dict['timeout_connections'].keys()
-		for key in timeouted_keys:
-			logged_time = event_dict['timeout_connections'][key]
-			current_time = int(time.time())
-			difference = current_time - int(logged_time)
-			if difference >= timeout_blocktime:
-				del event_dict['timeout_connections'][key]
-				if verbose_logging==1:
-					log("removing timeouted IP %s (blocktime: %s)" % (key, difference), 0, "debug", serverLogger, True)
-	except KeyboardInterrupt:
-		raise
+	Keyword arguments:
+	event_dict -- dictionary to store certain events (e.g. download events, exploit events, ...)
+	event_key -- key in the event dictionary which kind of blocked IP addresses should be checked
+	block_time -- configured time in seconds that IP addresses should be blocked
+	logger -- logging instance to use for logs
+	verbose_logging -- enable/disable verbose output
 
-def check_sucdown_ips(event_dict, sucdown_blocktime, serverLogger, verbose_logging):
-	### check successfull download ips
+	"""
 	try:
-		sucdown_keys = event_dict['sucdown_connections'].keys()
-		for key in sucdown_keys:
-			logged_time = event_dict['sucdown_connections'][key]
+		allkeys = event_dict[event_key].keys()
+		for key in allkeys:
+			logged_time = event_dict[event_key][key]
 			current_time = int(time.time())
 			difference = current_time - int(logged_time)
-			if difference >= sucdown_blocktime:
-				del event_dict['sucdown_connections'][key]
+			if difference >= block_time:
+				del event_dict[event_key][key]
 				if verbose_logging==1:
-					log("removing successfull download IP %s (blocktime: %s)" % (key, difference), 0, "debug", serverLogger, True)
-	except KeyboardInterrupt:
-		raise
-
-def check_sucexpl_ips(event_dict, sucexpl_blocktime, serverLogger, verbose_logging):
-	### check successfull exploit ips
-	try:
-		sucexpl_keys = event_dict['sucexpl_connections'].keys()
-		for key in sucexpl_keys:
-			logged_time = event_dict['sucexpl_connections'][key]
-			current_time = int(time.time())
-			difference = current_time - int(logged_time)
-			if difference >= sucexpl_blocktime:
-				del event_dict['sucexpl_connections'][key]
-				if verbose_logging==1:
-					log("removing successfull exploit IP %s (blocktime: %s)" % (key, difference), 0, "debug", serverLogger, True)
+					log("removing blocked IP %s (blocktime: %s, list: %s)" % (key, difference, event_key), 0, "debug", logger, True)
 	except KeyboardInterrupt:
 		raise
 
@@ -535,11 +511,17 @@ def check_file(data, data_len, suLogger):
 		raise
 
 def check_idle_bindports(bindports, bind_timeout):
-	### check idle bindports
+	"""Check all open bindports if they can be closed due to timeout
+
+	Keyword arguments:
+	bindports -- dictionary with all currently open bindports
+	bind_timeout -- configured number of seconds a bindport should be idle before forcefully closed
+
+	"""
 	try:
-		bind_keys = bindports.keys()
-		for key in bind_keys:
-			(ip,port,start_time) = bindports[key].split(',')
+		bindport_keys = bindports.keys()
+		for key in bindport_keys:
+			(ip, port, start_time) = bindports[key].split(',')
 			current_time = int(time.time())
 			difference = current_time - int(start_time)
 			if difference >= bind_timeout:
@@ -563,11 +545,17 @@ def check_idle_bindports(bindports, bind_timeout):
 		raise
 
 def check_idle_tftp_downloads(tftp_downloads, tftp_timeout):
-	### check idle tftp downloads
+	"""Check all current tftp download if a packet needs to be resend
+
+	Keyword arguments:
+	tftp_downloads -- dictionary of currently active tftp download requests
+	tftp_timeout -- number of seconds that need to pass until a packet is resend
+
+	"""
 	try:
 		tftp_keys = tftp_downloads.keys()
 		for key in tftp_keys:
-			(port,start_time,ip) = tftp_downloads[key].split(',')
+			(port, start_time, ip) = tftp_downloads[key].split(',')
 			current_time = int(time.time())
 			difference = current_time - int(start_time)
 			if difference >= tftp_timeout:
@@ -583,7 +571,13 @@ def check_idle_tftp_downloads(tftp_downloads, tftp_timeout):
 		raise
 
 def check_idle_ftp_downloads(ftp_downloads, ftp_timeout):
-	### check idle ftp downloads
+	"""Check all current ftp downloads if a connection is idle
+
+	Keyword arguments:
+	ftp_downloads -- dictionary of currently active ftp download requests
+	ftp_timeout -- configured number of seconds a ftp connection can be idle until closed
+
+	"""
 	try:
 		ftp_keys = ftp_downloads.keys()
 		for key in ftp_keys:
@@ -610,6 +604,13 @@ def check_idle_ftp_downloads(ftp_downloads, ftp_timeout):
 		raise
 
 def readVulnModules(config, display=True):
+	"""Load all configured vulnerability modules and the according network ports
+
+	Keyword arguments:
+	config -- instance of the configuration object
+	display -- display each module that is loaded
+
+	"""
 	modules = config.getListValues("vuln_modules")
 	vuln_modules = {}
 	for module in modules:
@@ -658,7 +659,7 @@ def readLogModules(config):
 		log_modules.append(import_name.log())
 	return log_modules
 
-def checkServers(serverList, vuln_modules, divLogger, amunServerIPList, currentSockets, decodersDict, event_dict, config_dict, config, refused_blocktime, connection_timeout, bindport_timeout, ftp_timeout, tftp_retransmissions, timeout_blocktime, sucdown_blocktime, sucexpl_blocktime):
+def checkServers(serverList, vuln_modules, divLogger, amunServerIPList, currentSockets, decodersDict, event_dict, config_dict, config, connection_timeout):
 	### iterate over all running tcp servers
 	current_time = int(time.time())
 	last_check = int(config_dict['last_check'])
@@ -669,7 +670,7 @@ def checkServers(serverList, vuln_modules, divLogger, amunServerIPList, currentS
 		confreloadResult, errorMess = config.reloadConfig()
 		if not confreloadResult:
 			log("failed config reload (%s)" % (errorMess), 0, "crit", divLogger['amunServer'], True)
-			return serverList,vuln_modules,refused_blocktime,connection_timeout,bindport_timeout,ftp_timeout,tftp_retransmissions,timeout_blocktime,sucdown_blocktime,sucexpl_blocktime
+			return serverList,vuln_modules,connection_timeout
 
 		### update configuration parameters
 		config_dict['check_new_vulns'] = int(config.getSingleValue("check_new_vulns"))
@@ -695,14 +696,15 @@ def checkServers(serverList, vuln_modules, divLogger, amunServerIPList, currentS
 		config_dict['verbose_logging'] = int(config.getSingleValue("verbose_logging"))
 		config_dict['max_open_sockets'] = int(config.getSingleValue("max_open_sockets"))
 		### get some global timeout parameters
-		n_refused_blocktime = int(config.getSingleValue("refused_blocktime"))
-		n_timeout_blocktime = int(config.getSingleValue("timeout_blocktime"))
-		n_sucdown_blocktime = int(config.getSingleValue("sucdown_blocktime"))
-		n_sucexpl_blocktime = int(config.getSingleValue("sucexpl_blocktime"))
+		config_dict['sucexpl_blocktime'] = int(config.getSingleValue("sucexpl_blocktime"))
+		config_dict['sucdown_blocktime'] = int(config.getSingleValue("sucdown_blocktime"))
+		config_dict['timeout_blocktime'] = int(config.getSingleValue("timeout_blocktime"))
+		config_dict['refused_blocktime'] = int(config.getSingleValue("refused_blocktime"))
+		config_dict['bindport_timeout'] = int(config.getSingleValue("bindport_timeout"))
+		config_dict['tftp_retransmissions'] = int(config.getSingleValue("tftp_retransmissions"))
+		config_dict['ftp_timeout'] = int(config.getSingleValue("ftp_timeout"))
+
 		n_connection_timeout = int(config.getSingleValue("connection_timeout"))
-		n_bindport_timeout = int(config.getSingleValue("bindport_timeout"))
-		n_ftp_timeout = int(config.getSingleValue("ftp_timeout"))
-		n_tftp_retransmissions = int(config.getSingleValue("tftp_retransmissions"))
 		### get debug options
 		output_curr_sockets = int(config.getSingleValue("output_curr_sockets"))
 		if output_curr_sockets==1:
@@ -764,9 +766,9 @@ def checkServers(serverList, vuln_modules, divLogger, amunServerIPList, currentS
 		del newMods
 		del curMods
 		### return updated lists
-		return newServerList,up_vuln_modules,n_refused_blocktime,n_connection_timeout,n_bindport_timeout,n_ftp_timeout,n_tftp_retransmissions,n_timeout_blocktime,n_sucdown_blocktime,n_sucexpl_blocktime
+		return newServerList,up_vuln_modules,n_connection_timeout
 	else:
-		return serverList,vuln_modules,refused_blocktime,connection_timeout,bindport_timeout,ftp_timeout,tftp_retransmissions,timeout_blocktime,sucdown_blocktime,sucexpl_blocktime
+		return serverList,vuln_modules,connection_timeout
 
 def createLogFile(logfilename, shortname, rotate=True, level=10):
 	"""
@@ -808,37 +810,9 @@ def runMain():
 		os.makedirs(logdir)
 
 	connection_timeout = int(config.getSingleValue("connection_timeout"))
-	bindport_timeout = int(config.getSingleValue("bindport_timeout"))
-	ftp_timeout = int(config.getSingleValue("ftp_timeout"))
-	tftp_retransmissions = int(config.getSingleValue("tftp_retransmissions"))
-	tftp_max_retransmissions = int(config.getSingleValue("tftp_max_retransmissions"))
 
-	refused_blocktime = int(config.getSingleValue("refused_blocktime"))
-	timeout_blocktime = int(config.getSingleValue("timeout_blocktime"))
-	sucdown_blocktime = int(config.getSingleValue("sucdown_blocktime"))
-	sucexpl_blocktime = int(config.getSingleValue("sucexpl_blocktime"))
-
-	block_refused = int(config.getSingleValue("block_refused"))
-	block_timeout = int(config.getSingleValue("block_timeout"))
-	block_sucdown = int(config.getSingleValue("block_sucdown"))
-	block_sucexpl = int(config.getSingleValue("block_sucexpl"))
-
-	store_unfinished_tftp = int(config.getSingleValue("store_unfinished_tftp"))
-	check_http_filesize = int(config.getSingleValue("check_http_filesize"))
-	replace_locals = int(config.getSingleValue("replace_local_ip"))
+	### check if honeypot should be pingable
 	allow_ping = int(config.getSingleValue("honeypot_pingable"))
-	check_new_vulns = int(config.getSingleValue("check_new_vulns"))
-
-	log_local_downloads = int(config.getSingleValue("log_local_downloads"))
-	ftp_port_range = config.getSingleValue("ftp_port_range")
-	ftp_nat_ip = config.getSingleValue("ftp_nat_ip")
-
-	if ftp_nat_ip!="None":
-		ipReg = re.compile("(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})")
-		match = ipReg.search(ftp_nat_ip)
-		if not match:
-			ftp_nat_ip = socket.gethostbyaddr(ftp_nat_ip)[2][0]
-
 	if not allow_ping:
 		### set iptables rule to block ping
 		ipt_command = "INPUT -p icmp -j DROP"
@@ -849,89 +823,77 @@ def runMain():
 	vuln_modules = readVulnModules(config)
 	submit_modules = readSubmitModules(config)
 	log_modules = readLogModules(config)
+	### logger dictionary
+	divLogger = {}
 	### create download logfile
-	dlLogger = createLogFile("download.log", "dl")
+	divLogger['download'] = createLogFile("download.log", "dl")
 	### create unknown download logfile
-	ukLogger = createLogFile("unknown_downloads.log", "ud")
+	divLogger['unknownDownload'] = createLogFile("unknown_downloads.log", "ud")
 	### create successfull download logfile
 	suLogger = createLogFile("successfull_downloads.log", "su")
 	### create exploit logfile
 	exLogger = createLogFile("exploits.log", "ex")
 	### create amun server logfile
-	asLogger = createLogFile("amun_server.log", "as")
+	divLogger['amunServer'] = createLogFile("amun_server.log", "as")
 	### create amun request handler logfile
-	arLogger = createLogFile("amun_request_handler.log", "ar")
+	divLogger['requestHandler'] = createLogFile("amun_request_handler.log", "ar")
 	### create shellcode manager logfile
-	shLogger = createLogFile("shellcode_manager.log", "sh")
+	divLogger['shellcode'] = createLogFile("shellcode_manager.log", "sh")
 	### create vulnerabilities logfile
-	vuLogger = createLogFile("vulnerabilities.log", "vu")
+	divLogger['vulnerability'] = createLogFile("vulnerabilities.log", "vu")
 	### create submission logfile
 	smLogger = createLogFile("submissions.log", "sm")
 	### create logging logfile
 	loLogger = createLogFile("logging.log", 'lo')
 	### create shellemulator logfile
-	emuLogger = createLogFile("shellemulator.log", "emu")
+	divLogger['shellemulator'] = createLogFile("shellemulator.log", "emu")
 	### create Socket and Download Dicts
 	currentSockets = {}
 	currentDownloads = {}
 	tftp_downloads = {}
 	ftp_downloads = {}
 	bindports = {}
-	### Event Dictionary
-	event_dict = {}
-	event_dict['download'] = {}
-	event_dict['exploit'] = {}
-	event_dict['successfull_downloads'] = {}
-	event_dict['refused_connections'] = {}
-	event_dict['timeout_connections'] = {}
-	event_dict['sucdown_connections'] = {}
-	event_dict['sucexpl_connections'] = {}
-	event_dict['initial_connections'] = {}
+	### event dictionary
+	event_dict = {
+			'download': {},
+			'exploit': {},
+			'successfull_downloads': {},
+			'refused_connections': {},
+			'timeout_connections': {},
+			'sucdown_connections':{},
+			'sucexpl_connections':{},
+			'initial_connections':{}
+			}
 	### configuration Dictionary
 	config_dict = {}
-	config_dict['block_refused'] = block_refused
-	config_dict['block_timeout'] = block_timeout
-	config_dict['block_sucdown'] = block_sucdown
-	config_dict['block_sucexpl'] = block_sucexpl
-	config_dict['replace_locals'] = replace_locals
-	config_dict['store_unfinished_tftp'] = store_unfinished_tftp
-	config_dict['check_http_filesize'] = check_http_filesize
-	config_dict['tftp_max_retransmissions'] = tftp_max_retransmissions
-	config_dict['check_new_vulns'] = check_new_vulns
-	config_dict['log_local_downloads'] = log_local_downloads
-	config_dict['ftp_port_range'] = ftp_port_range
-	config_dict['ftp_nat_ip'] = ftp_nat_ip
+	config_dict['block_refused'] = int(config.getSingleValue("block_refused"))
+	config_dict['block_timeout'] = int(config.getSingleValue("block_timeout"))
+	config_dict['block_sucdown'] = int(config.getSingleValue("block_sucdown"))
+	config_dict['block_sucexpl'] = int(config.getSingleValue("block_sucexpl"))
+	config_dict['replace_locals'] = int(config.getSingleValue("replace_local_ip"))
+	config_dict['store_unfinished_tftp'] = int(config.getSingleValue("store_unfinished_tftp"))
+	config_dict['check_http_filesize'] = int(config.getSingleValue("check_http_filesize"))
+	config_dict['tftp_max_retransmissions'] = int(config.getSingleValue("tftp_max_retransmissions"))
+	config_dict['check_new_vulns'] = int(config.getSingleValue("check_new_vulns"))
+	config_dict['log_local_downloads'] = int(config.getSingleValue("log_local_downloads"))
+	config_dict['ftp_port_range'] = config.getSingleValue("ftp_port_range")
+	config_dict['ftp_nat_ip'] = config.getSingleValue("ftp_nat_ip")
+	if config_dict['ftp_nat_ip']!="None":
+		ipReg = re.compile("(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})")
+		match = ipReg.search(config_dict['ftp_nat_ip'])
+		if not match:
+			config_dict['ftp_nat_ip'] = socket.gethostbyaddr(config_dict['ftp_nat_ip'])[2][0]
 	config_dict['last_check'] = int(time.time())
 	config_dict['verbose_logging'] = int(config.getSingleValue("verbose_logging"))
 	config_dict['max_open_sockets'] = int(config.getSingleValue("max_open_sockets"))
+	config_dict['sucexpl_blocktime'] = int(config.getSingleValue("sucexpl_blocktime"))
+	config_dict['sucdown_blocktime'] = int(config.getSingleValue("sucdown_blocktime"))
+	config_dict['timeout_blocktime'] = int(config.getSingleValue("timeout_blocktime"))
+	config_dict['refused_blocktime'] = int(config.getSingleValue("refused_blocktime"))
+	config_dict['bindport_timeout'] = int(config.getSingleValue("bindport_timeout"))
+	config_dict['tftp_retransmissions'] = int(config.getSingleValue("tftp_retransmissions"))
+	config_dict['ftp_timeout'] = int(config.getSingleValue("ftp_timeout"))
 	log("maximum number of allowed open sockets: %s" % (config_dict['max_open_sockets']), 0, "info", None, True)
-	del block_refused
-	del block_timeout
-	del block_sucexpl
-	del replace_locals
-	del store_unfinished_tftp
-	del check_http_filesize
-	del tftp_max_retransmissions
-	del check_new_vulns
-	del log_local_downloads
-	del ftp_port_range
-	del ftp_nat_ip
-	### Logger Dictionary
-	divLogger = {}
-	divLogger['download'] = dlLogger
-	divLogger['unknownDownload'] = ukLogger
-	divLogger['amunServer'] = asLogger
-	divLogger['requestHandler'] = arLogger
-	divLogger['shellcode'] = shLogger
-	divLogger['vulnerability'] = vuLogger
-	divLogger['shellemulator'] = emuLogger
-	del dlLogger
-	del ukLogger
-	del asLogger
-	del arLogger
-	del shLogger
-	del vuLogger
-	del emuLogger
 	### Register Shellcode Decoders
 	regDecode = decoders.decoders()
 	decodersDict = regDecode.getDecoders()
@@ -982,21 +944,22 @@ def runMain():
 			### check initial connection
 			check_for_initial_connection_event(event_dict, exLogger, log_modules, loLogger, currentSockets, divLogger['amunServer'], config_dict['verbose_logging'])
 			### check for idle bindports
-			check_idle_bindports(bindports, bindport_timeout)
+			check_idle_bindports(bindports, config_dict['bindport_timeout'])
 			### check for idle tftp downloads
-			check_idle_tftp_downloads(tftp_downloads, tftp_retransmissions)
+			check_idle_tftp_downloads(tftp_downloads, config_dict['tftp_retransmissions'])
 			### check for idle ftp downloads
-			check_idle_ftp_downloads(ftp_downloads, ftp_timeout)
+			check_idle_ftp_downloads(ftp_downloads, config_dict['ftp_timeout'])
 			### check the list of refused IPs
-			check_refused_ips(event_dict, refused_blocktime, divLogger['amunServer'], config_dict['verbose_logging'])
+			generic_check_unblock_ips(event_dict, 'refused_connections', config_dict['refused_blocktime'], divLogger['amunServer'], config_dict['verbose_logging'])
 			### check the list of timeouted IPs
-			check_timeout_ips(event_dict, timeout_blocktime, divLogger['amunServer'], config_dict['verbose_logging'])
+			generic_check_unblock_ips(event_dict, 'timeout_connections', config_dict['timeout_blocktime'], divLogger['amunServer'], config_dict['verbose_logging'])
 			### check the list of successfull download IPs
-			check_sucdown_ips(event_dict, sucdown_blocktime, divLogger['amunServer'], config_dict['verbose_logging'])
+			generic_check_unblock_ips(event_dict, 'sucdown_connections', config_dict['sucdown_blocktime'], divLogger['amunServer'], config_dict['verbose_logging'])
 			### check the list of successfull exploit IPs
-			check_sucexpl_ips(event_dict, sucexpl_blocktime, divLogger['amunServer'], config_dict['verbose_logging'])
+			generic_check_unblock_ips(event_dict, 'sucexpl_connections', config_dict['sucexpl_blocktime'], divLogger['amunServer'], config_dict['verbose_logging'])
+
 			### check running TCP Servers and reload config
-			(serverList, vuln_modules, refused_blocktime, connection_timeout, bindport_timeout, ftp_timeout, tftp_retransmissions, timeout_blocktime, sucdown_blocktime, sucexpl_blocktime) = checkServers(serverList, vuln_modules, divLogger, amunServerIPList, currentSockets, decodersDict, event_dict, config_dict, config, refused_blocktime, connection_timeout, bindport_timeout, ftp_timeout, tftp_retransmissions, timeout_blocktime, sucdown_blocktime, sucexpl_blocktime)
+			(serverList, vuln_modules, connection_timeout) = checkServers(serverList, vuln_modules, divLogger, amunServerIPList, currentSockets, decodersDict, event_dict, config_dict, config, connection_timeout)
 			### release CPU for short time
 			time.sleep(.0001)
 		except socket.error, e:
@@ -1039,7 +1002,9 @@ def runMain():
 	log("quit", 0, "crit", None, True)
 
 def lowerPrivileges(uidName="nobody", gidGroup="nogroup"):
-	""" drop root privileges """
+	"""drop root privileges
+
+	"""
 	try:
 		import pwd
 		import grp
@@ -1085,26 +1050,22 @@ def lowerPrivileges(uidName="nobody", gidGroup="nogroup"):
 	return
 
 def readOptions():
-	""" read commandline options """
+	"""Read commandline options
 
+	"""
 	usage = """
         %prog [options]
         """
 	parser = optparse.OptionParser(usage=usage, version = "%prog v"+__version__)
-
 	parser.add_option("-a", "--analyse",
 			action="store", type="string", dest="filename", default=None,
 			help="analyse given file for known shellcode")
-
 	parser.add_option("-s", "--shellcmd",
 			action="store_true", dest="shellcmd", default=False,
 			help="contains plain shellcommands in combination with --analyse (-a)")
-
 	return parser.parse_args()
 
 def runAnalysis(filename, shellcmd):
-	import shellcode_mgr_core
-	import os
 	try:
 		if os.path.exists(filename):
 			config_dict = {}
@@ -1148,7 +1109,7 @@ if __name__ == '__main__':
 	import download_core
 	import tftp_download_core
 	import ftp_download_core
-	import bindport_core
+	import amun_bindport_core
 	import shellcode_mgr_core
 	import utils
 
