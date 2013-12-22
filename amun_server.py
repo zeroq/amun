@@ -1,4 +1,4 @@
-#!/usr/bin/python -O
+#!/usr/bin/env python -O
 
 """
 [Amun - low interaction honeypot]
@@ -275,7 +275,7 @@ def check_download_events(event_dict, config_dict, currentDownloads, bindports, 
 			elif item['found']=="bindport":
 				### BindPort
 				currentDownloads[item['dlident']] = int(time.time())
-				d = bindport_core.bindPort(item, currentDownloads, bindports, event_dict, divLogger, config_dict, currentSockets, decodersDict)
+				d = amun_bindport_core.bindPort(item, currentDownloads, bindports, event_dict, divLogger, config_dict, currentSockets, decodersDict)
 			elif item['found']=="connectbackfiletrans":
 				### ConnectBack Filetransfer
 				currentDownloads[item['dlident']] = int(time.time())
