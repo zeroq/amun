@@ -294,6 +294,8 @@ def check_download_events(event_dict, config_dict, currentDownloads, bindports, 
 				d = ftp_download_core.download_ftp(item, currentDownloads, event_dict, config_dict, ftp_downloads, divLogger['download'], currentSockets)
 			elif item['found']=='mydoom':
 				continue
+			elif item['found']=='directfile':
+				continue
 			else:
 				### Unknown Download Event
 				log("unknown item: %s" % (item), 0, "info", divLogger['unknownDownload'], False)
