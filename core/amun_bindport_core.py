@@ -148,8 +148,14 @@ class req_handler(asynchat.async_chat):
 							self.log_obj.log("TFTP from %s:%s file %s" % (result['host'],result['port'],result['path']), 12, "info", True, False)
 						elif result['found'] == "direct":
 							self.log_obj.log("Direct file submission detected from %s:%s" % (result['host'],result['port']), 12, "info", True, False)
+							self.createFileEvent(vulnResult['shellcode'], len(vulnResult['shellcode']), vulnResult['vulnname'], "direct://%s:%s" % (result['host'],result['port']))
 		except KeyboardInterrupt:
 			raise
+
+	def createFileEvent(self, file_data, file_data_length, vulnname, downURL):
+		event_item = (file_data_length, self.attIP, self.attPort, self.ownIP, "DirectFile", file_data, vulnname, downURL)
+		id = "%s%s" % (self.attIP.replace('.',''), self.ownPort)
+		self.event_dict['successfull_downloads'][id] = event_item
 
 	def remove_download_entry(self):
 		try:
@@ -183,8 +189,8 @@ class req_handler(asynchat.async_chat):
 
 
 class bindPort(asyncore.dispatcher):
-        def __init__(self, item, currentDownloads, bindports, event_dict, divLogger, config_dict, currentSockets, decodersDict):
-                asyncore.dispatcher.__init__(self)
+    def __init__(self, item, currentDownloads, bindports, event_dict, divLogger, config_dict, currentSockets, decodersDict):
+		asyncore.dispatcher.__init__(self)
 		self.divLogger = divLogger
 		self.log_obj = amun_logging.amun_logging("bindport", divLogger['download'])
 		self.item = item
@@ -195,24 +201,24 @@ class bindPort(asyncore.dispatcher):
 		self.config_dict = config_dict
 		self.decodersDict = decodersDict
 		self.replace_locals = config_dict['replace_locals']
-                self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
-                self.set_reuse_addr()
+		self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
+		self.set_reuse_addr()
 		self.identifier = "%s%s" % (item['own_host'],item['port'])
-                try:
-                        self.bind( (item['own_host'], int(item['port'])) )
-                except socket.error, e:
-                        self.log_obj.log("port already in use? (%s): %s" % (item['port'],e), 6, "crit", True, True)
+		try:
+			self.bind( (item['own_host'], int(item['port'])) )
+		except socket.error, e:
+			self.log_obj.log("port already in use? (%s): %s" % (item['port'],e), 6, "crit", True, True)
 			self.remove_download_entry()
 			try:
 				self.close()
 			except:
 				pass
-                        return
-                self.listen(1)
+			return
+		self.listen(1)
 		if not self.currentSockets.has_key(self.identifier):
 			self.currentSockets[self.identifier] = (int(time.time()), self.socket)
 		bindports[item['dlident']] = "%s,%s,%s" % (item['own_host'],item['port'],int(time.time()))
-                self.log_obj.log("%s initialized on port %s" % (item['own_host'], item['port']), 6, "info", True, False)
+		self.log_obj.log("%s initialized on port %s" % (item['own_host'], item['port']), 6, "info", True, False)
 
 	def remove_download_entry(self):
 		if self.currentDownloads.has_key(self.item['dlident']):
@@ -230,18 +236,18 @@ class bindPort(asyncore.dispatcher):
 		self.close()
 		self.log_obj.log("%s port closed %s" % (self.item['own_host'], self.item['port']), 6, "info", False, False)
 
-        def handle_accept(self):
-                try:
+	def handle_accept(self):
+		try:
 			(conn, addr) = self.accept()
 			(attIP, attPort) = conn.getpeername()
 			(ownIP, ownPort) = conn.getsockname()
 			self.log_obj.log("incoming data connection: %s:%s to port: %s" % (attIP, attPort, ownPort), 9, "debug", True, False)
 			handler = req_handler(self.divLogger, self.config_dict, self.decodersDict).handle_incoming_connection(conn, addr, self.currentDownloads, self.item, self.event_dict, self.replace_locals, attIP, attPort, ownIP, ownPort, self.bindports)
-                except socket.error, e:
-                        self.log_obj.log("error: %s" % (e), 6, "crit", True, True)
+		except socket.error, e:
+			self.log_obj.log("error: %s" % (e), 6, "crit", True, True)
 		except KeyboardInterrupt:
 			raise
-                self.handle_close()
+		self.handle_close()
 		return
 
 	def handle_connect(self):
