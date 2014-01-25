@@ -148,12 +148,20 @@ class shell_mgr:
 			self.shellcode = str(vulnResult['shellcode']).strip()
 			self.attIP = attIP
 			self.ownIP = ownIP
+			self.ownPort = ownPort
 			self.replace_locals = replace_locals
 			self.displayShellCode = displayShellCode
 			### list of all results
 			self.overallResults = []
 			self.resultSet = self.getNewResultSet(vulnResult['vulnname'], attIP, ownIP)
-			### check for http urls first
+			### check for direct file submission
+			direct_file_result = self.match_direct_file()
+			if direct_file_result==1 and self.resultSet['result']:
+				self.overallResults.append(self.resultSet)
+				return self.overallResults
+			self.resultSet = self.getNewResultSet(vulnResult['vulnname'], attIP, ownIP)
+			self.shellcode = str(vulnResult['shellcode']).strip()
+			### check for http urls
 			http_result = self.match_url("None")
 			if http_result==1 and self.resultSet['result']:
 				self.overallResults.append(self.resultSet)
@@ -1796,6 +1804,29 @@ class shell_mgr:
 				self.log_obj.log("(%s) failed writing hexdump (%s) (%s :%s) - %s" % (self.attIP, e, digest, len(file_data), self.resultSet['vulnname']), 9, "crit", True, True)
 				return False
 		return True
+
+	def match_direct_file(self, dec_shellcode=None):
+		"""Check if given shellcode is an executable file
+
+		Keyword arguments:
+		dec_shellcode -- decoded shellcode (default None, i.e. use global self.shellcode)
+		"""
+		if self.displayShellCode:
+			print "starting DirectFile matching ..."
+			stdout.flush()
+		if not dec_shellcode:
+			match = self.decodersDict['directfile'].search( self.shellcode )
+		else:
+			match = self.decodersDict['directfile'].search( dec_shellcode )
+		if match:
+			self.resultSet['result'] = True
+			self.resultSet['found'] = "directfile"
+			self.resultSet['dlident'] = "%s%s%s" % (self.attIP.replace('.',''), self.ownIP.replace('.',''), self.ownPort)
+			self.resultSet['isLocalIP'] = False
+			self.resultSet['shellcodeName'] = "directfile"
+			return 1
+		return 0
+
 
 	def match_url(self, dec_shellcode=None):
 		"""Check given shellcode for known http urls

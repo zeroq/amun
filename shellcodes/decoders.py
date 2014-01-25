@@ -27,7 +27,11 @@ class decoders:
 		self.log("compiling CheckIP Expression", 0, "info")
 		self.decodersDict['checkIP'] = re.compile('[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}')
 
-		### HTTP/HTTPS/FTP - thanks to 
+		### MZ Header
+		self.log("compiling MZ header detection", 0, "info")
+		self.decodersDict['directfile'] = re.compile('^MZ.*?This program cannot be run in DOS mode')
+
+		### HTTP/HTTPS/FTP
 		self.log("compiling URL decoder", 0, "info")
 		self.decodersDict['url'] = re.compile('((https?|ftp):((\/\/)|(\\\\))+[\d\w:@\/()~_?\+\-=\\\.&]*)')
 

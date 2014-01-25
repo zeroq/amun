@@ -146,6 +146,8 @@ class req_handler(asynchat.async_chat):
 							self.log_obj.log("FTP from %s:%s (User: %s Pass: %s) file(s) %s" % (result['host'],result['port'],result['username'],result['passwort'],result['path']), 12, "info", True, False)
 						elif result['found'] == "tftp":
 							self.log_obj.log("TFTP from %s:%s file %s" % (result['host'],result['port'],result['path']), 12, "info", True, False)
+						elif result['found'] == "direct":
+							self.log_obj.log("Direct file submission detected from %s:%s" % (result['host'],result['port']), 12, "info", True, False)
 		except KeyboardInterrupt:
 			raise
 
