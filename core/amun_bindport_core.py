@@ -147,8 +147,10 @@ class req_handler(asynchat.async_chat):
 						elif result['found'] == "tftp":
 							self.log_obj.log("TFTP from %s:%s file %s" % (result['host'],result['port'],result['path']), 12, "info", True, False)
 						elif result['found'] == "direct":
-							self.log_obj.log("Direct file submission detected from %s:%s" % (result['host'],result['port']), 12, "info", True, False)
+							self.log_obj.log("Direct file submission detected from %s:%s" % (result['host'],result['port']), 12, "info", True, True)
 							self.createFileEvent(vulnResult['shellcode'], len(vulnResult['shellcode']), vulnResult['vulnname'], "direct://%s:%s" % (result['host'],result['port']))
+			else:
+				self.log_obj.log("no detection by shellcode manager", 12, "crit", True, True)
 		except KeyboardInterrupt:
 			raise
 
