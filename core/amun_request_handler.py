@@ -583,7 +583,7 @@ class amun_reqhandler(asynchat.async_chat):
 				elif not event_item and len(data)>0:
 					self.log_obj.log("incomplete vuln (Attacker: %s Port: %s, Mess: %s (%i) Stages: %s)" % (self.remote_ip, self.own_port, [data], len(data), result['stage_list']), 6, "crit", True, False)
 				elif not event_item and len(data)==0 and state!="amun_stage_finished":
-					#self.log_obj.log("PortScan Detected on Port: %s (%s)" % (self.own_port, self.remote_ip), 6, "div", True, False)
+					self.log_obj.log("PortScan Detected on Port: %s (%s)" % (self.own_port, self.remote_ip), 6, "div", True, False)
 					pass
 				try:
 					self.socket_object.send("\r\n")

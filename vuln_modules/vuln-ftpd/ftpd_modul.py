@@ -60,7 +60,7 @@ class vuln:
 			resultSet["isFile"] = False
 
 			if bytes>3:
-				m = "Message: %s Bytes: %s Stage: %s" % ([message], bytes, self.stage)
+				m = "Attacker: %s Message: %s Bytes: %s Stage: %s" % (ip, [message], bytes, self.stage)
 				self.log_obj.log(m, 6, "info", True, False)
 
 			if self.stage == "FTPD_STAGE1":

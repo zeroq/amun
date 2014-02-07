@@ -1387,6 +1387,7 @@ class shell_mgr:
 		m3 = False
 		m4 = False
 		m5 = False
+		m6 = False
 		i = 0
 		while i<=len(keys):
 			dec_shellcode = self.decrypt_multi_xor(keys, self.shellcode, i)
@@ -1396,7 +1397,8 @@ class shell_mgr:
 			m3 = self.decodersDict['rothenburg_bindport2'].search( dec_shellcode )
 			m4 = self.decodersDict['schoenborn_bindport'].search( dec_shellcode )
 			m5 = self.decodersDict['schoenborn_connback2'].search( dec_shellcode )
-			if m1 or m2 or m3 or m4 or m5:
+			m6 = self.decodersDict['schoenborn_portopening'].search( dec_shellcode )
+			if m1 or m2 or m3 or m4 or m5 or m6:
 				break
 			i += 1
 		### Rothenburg bindport
@@ -1462,6 +1464,18 @@ class shell_mgr:
 			bindportID = "%s%s" % (self.ownIP.replace('.',''), port)
 			self.resultSet['dlident'] = bindportID
 			self.log_obj.log("found schoenborn shellcode 2 (key: %s, port: %s)" % (keys, port), 9, "info", False, True)
+			bindURL = "bind://%s:%s/" % (self.ownIP, port)
+			self.resultSet['displayURL'] = bindURL
+			self.resultSet['shellcodeName'] = "schoenborn"
+			return True
+		if m6:
+			port = m6.groups()[0]
+			self.resultSet['port'] = port
+			self.resultSet['found'] = "bindport"
+			self.resultSet['result'] = True
+			bindportID = "%s%s" % (self.ownIP.replace('.',''), port)
+			self.resultSet['dlident'] = bindportID
+			self.log_obj.log("found schoenborn shellcode 3 (key: %s, port: %s)" % (keys, port), 9, "info", False, True)
 			bindURL = "bind://%s:%s/" % (self.ownIP, port)
 			self.resultSet['displayURL'] = bindURL
 			self.resultSet['shellcodeName'] = "schoenborn"
