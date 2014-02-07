@@ -94,7 +94,7 @@ class decoders:
 		self.decodersDict['schoenborn_bindport'] = re.compile('\\x89\\xc7\\x31\\xdb\\x53\\x68\\x02\\x00(..)\\x89\\xe6\\x6a', re.S)
 		self.decodersDict['schoenborn_connback'] = re.compile('\\x53\\x53\\x53\\x43\\x53\\x43\\x53\\xff\\xd0\\x68(....)\\x66\\x68(..)\\x66\\x53\\x89\\xe1', re.S)
 		self.decodersDict['schoenborn_connback2'] = re.compile('\\xff\\xd5\\x89\\xc7\\x68(....)\\x68\\x02\\x00(..)\\x89\\xe6\\x6a', re.S)
-		self.decorderDict['schoenborn_portopening'] = re.compile('firewall add portopening TCP (\d*) spools', re.S)
+		self.decodersDict['schoenborn_portopening'] = re.compile('firewall add portopening TCP (\d*) spools', re.S)
 
 		### Aachen Shellcode
 		self.log("compiling aachen xor decoder", 0, "info")
