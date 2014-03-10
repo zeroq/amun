@@ -94,7 +94,7 @@ class download_http(asyncore.dispatcher):
 		pass
 
 	def handle_error(self):
-		self.log_obj.log("handle_error", 0, "crit", True, True)
+		self.log_obj.log("http_handle_error", 0, "crit", True, True)
 		f = StringIO()
 		traceback.print_exc(file=f)
 		self.log_obj.log(f.getvalue(), 0, "crit", True, True)
@@ -234,7 +234,7 @@ class download_http(asyncore.dispatcher):
                         else:
                                 self.handle_close()
                 except socket.error, e:
-			self.log_obj.log("handle_write() %s" % (e), 12, "crit", False, True)
+                        self.log_obj.log("handle_write() %s" % (e), 12, "crit", False, True)
                         self.handle_close()
 
 
@@ -313,7 +313,7 @@ class download_connectback(asyncore.dispatcher):
 		pass
 
 	def handle_error(self):
-		self.log_obj.log("handle_error", 0, "crit", True, True)
+		self.log_obj.log("connback_handle_error", 0, "crit", True, True)
 		f = StringIO()
 		traceback.print_exc(file=f)
 		self.log_obj.log(f.getvalue(), 0, "crit", True, True)
