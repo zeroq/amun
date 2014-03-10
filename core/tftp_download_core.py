@@ -66,8 +66,8 @@ class tftp(asyncore.dispatcher):
 		self.curBlock = 0
 
 		### request packet
-		#self.packet = '\x00\x01%s\x00octet\x00blksize\x00%s\x00' % (self.file, self.blk_size)
-		self.packet = '\x00\x01%s\x00octet\x00' % (self.file)
+		self.packet = '\x00\x01%s\x00octet\x00blksize\x00%s\x00' % (self.file, self.blk_size)
+		#self.packet = '\x00\x01%s\x00octet\x00' % (self.file)
 
 		self.sendto(self.packet, self._address)
 		(self.own_ip, self.own_port) = self.getsockname()
