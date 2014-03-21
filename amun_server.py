@@ -2,7 +2,7 @@
 
 """
 [Amun - low interaction honeypot]
-Copyright (C) [2013]  [Jan Goebel]
+Copyright (C) [2014]  [Jan Goebel]
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.
 
@@ -12,7 +12,7 @@ You should have received a copy of the GNU General Public License along with thi
 """
 
 __author__ = "jan goebel <goebel@pi-one.net>"
-__version__ = "0.2.2-devel"
+__version__ = "0.2.2"
 
 try:
 	import psyco ; psyco.full()
