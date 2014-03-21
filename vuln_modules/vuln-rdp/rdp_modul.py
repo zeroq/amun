@@ -108,7 +108,7 @@ class vuln:
 				return resultSet
 			elif self.stage == "SHELLCODE":
 				if bytes>0:
-					print "shellcode bytes>0"
+					#print "shellcode bytes>0"
 					reply, code = self.rdpHandler.consume(message, ownIP)
 					if reply!=None:
 						resultSet['reply'] = reply+'*'
@@ -117,7 +117,7 @@ class vuln:
 						self.stage = "SHELLCODE"
 					return resultSet
 				else:
-					print "shellcode else"
+					#print "shellcode else"
 					resultSet["result"] = False
 					resultSet["accept"] = True
 					resultSet["reply"] = "None"
