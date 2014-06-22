@@ -104,7 +104,7 @@ class shell_mgr:
 			self.overallResults = []
 			self.resultSet = self.getNewResultSet(vulnResult['vulnname'], attIP, ownIP)
 			### check for http urls first
-			http_result = self.match_url("None")
+			http_result = self.match_url()
 			if http_result==1 and self.resultSet['result']:
 				self.overallResults.append(self.resultSet)
 				return self.overallResults
@@ -162,7 +162,7 @@ class shell_mgr:
 			self.resultSet = self.getNewResultSet(vulnResult['vulnname'], attIP, ownIP)
 			self.shellcode = str(vulnResult['shellcode']).strip()
 			### check for http urls
-			http_result = self.match_url("None")
+			http_result = self.match_url()
 			if http_result==1 and self.resultSet['result']:
 				self.overallResults.append(self.resultSet)
 			### url matched but incomplete
