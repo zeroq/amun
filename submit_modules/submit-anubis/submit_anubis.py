@@ -58,9 +58,9 @@ class submit(object):
 				filename = "amun-%s.exe" % (md5hash)
 				postdata['analysisType'] = "file"
 				postdata["executable"] = {"content" : file_data, "filename" : filename}
-	
+
 				response = self.httprequest(postdata)
-	
+
 				if (response.status == 200 and response.getheader("taskid", "DEFAULT") != "DEFAULT"):
 					self.log_obj.log("submit anubis successfull", 12, "div", Log=False, display=True)
 					if postdata["notification"] == "browser" or self.alwaysLog:
@@ -83,9 +83,9 @@ class submit(object):
 
 	def httprequest(self, postdata):
 		if not self.anubisURL.startswith("http://"):
-			raise "Invalid URL, only http:// URLs are allowed: url='%s'" % (self.anubisURL)
+			raise Exception("Invalid URL, only http:// URLs are allowed: url='%s'" % (self.anubisURL))
 		if  not postdata:
-			raise "Invalid/No POST data supplied: postdata='%s'" % (postdata)
+			raise Exception("Invalid/No POST data supplied: postdata='%s'" % (postdata))
 
 		headers = {}
 		headers["Content-Type"] = "multipart/form-data"
@@ -122,7 +122,7 @@ class submit(object):
 		### Precondition: 'url', 'method', 'headers', 'body' are all setup properly.
 		scheme, netloc, path, parameters, query, fragment = urlparse.urlparse(self.anubisURL)
 		if parameters or query or fragment:
-			raise "Unexpected URL: parameters=%r, query=%r, fragment=%r" % (parameters, query, fragment)
+			raise Exception("Unexpected URL: parameters=%r, query=%r, fragment=%r" % (parameters, query, fragment))
 		try:
 			conn = httplib.HTTPConnection(netloc)
 			conn.request("POST", path, body, headers)

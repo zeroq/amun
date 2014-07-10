@@ -53,7 +53,7 @@ class submit(object):
 				filename = "amun-%s.exe" % (md5hash)
 				files = []
 				files.append( ("upfile", filename, file_data) )
-	
+
 				(status, reason, response) = self.httprequest(fields, files)
 
 				if (status == 200 and reason != "DEFAULT"):
@@ -82,9 +82,9 @@ class submit(object):
 
 	def httprequest(self, fields, files):
 		if not self.cwsandboxURL.startswith("http://"):
-			raise "Invalid URL, only http:// URLs are allowed: url='%s'" % (self.cwsandboxURL)
+			raise Exception("Invalid URL, only http:// URLs are allowed: url='%s'" % (self.cwsandboxURL))
 		if  not fields or not files:
-			raise "Invalid/No POST data supplied: fields='%s' files='%s'" % (fields, files)
+			raise Exception("Invalid/No POST data supplied: fields='%s' files='%s'" % (fields, files))
 		(scheme, netloc, path, parameters, query, fragment) = urlparse.urlparse(self.cwsandboxURL)
 		content_type, body = self.encode_multipart_formdata(fields, files)
 
@@ -124,7 +124,7 @@ class submit(object):
 		body = linebreak.join(postdata)
 		content_type = 'multipart/form-data; boundary=%s' % boundaryLine
 		return content_type, body
-	
+
 	def get_content_type(self, filename):
 		return mimetypes.guess_type(filename)[0] or 'application/octet-stream'
 
