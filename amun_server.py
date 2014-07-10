@@ -12,7 +12,7 @@ You should have received a copy of the GNU General Public License along with thi
 """
 
 __author__ = "jan goebel <goebel@pi-one.net>"
-__version__ = "0.2.2"
+__version__ = "0.2.3-devel"
 
 try:
 	import psyco ; psyco.full()
