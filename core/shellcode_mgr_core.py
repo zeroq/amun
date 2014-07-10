@@ -1,6 +1,6 @@
 """
 [Amun - low interaction honeypot]
-Copyright (C) [2013]  [Jan Goebel]
+Copyright (C) [2014]  [Jan Goebel]
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.
 
@@ -104,7 +104,7 @@ class shell_mgr:
 			self.overallResults = []
 			self.resultSet = self.getNewResultSet(vulnResult['vulnname'], attIP, ownIP)
 			### check for http urls first
-			http_result = self.match_url("None")
+			http_result = self.match_url()
 			if http_result==1 and self.resultSet['result']:
 				self.overallResults.append(self.resultSet)
 				return self.overallResults
@@ -162,7 +162,7 @@ class shell_mgr:
 			self.resultSet = self.getNewResultSet(vulnResult['vulnname'], attIP, ownIP)
 			self.shellcode = str(vulnResult['shellcode']).strip()
 			### check for http urls
-			http_result = self.match_url("None")
+			http_result = self.match_url()
 			if http_result==1 and self.resultSet['result']:
 				self.overallResults.append(self.resultSet)
 			### url matched but incomplete
