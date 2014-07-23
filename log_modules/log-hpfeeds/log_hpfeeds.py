@@ -1,6 +1,6 @@
 """
 [Amun - low interaction honeypot]
-Copyright (C) [2013]  [Jan Goebel]
+Copyright (C) [2014]  [Jan Goebel]
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.
 
@@ -22,7 +22,6 @@ import amun_logging
 import amun_config_parser
 import base64
 
-#from kippo/hpfeeds.py
 import os
 import struct
 import hashlib
@@ -47,7 +46,6 @@ SIZES = {
 }
 
 AMUNCHAN = 'amun.events'
-#AMUNCHAN = 'HoneyNED'
 
 class BadClient(Exception):
         pass
@@ -101,12 +99,12 @@ class hpclient(object):
     def __init__(self, server, port, ident, secret, debug, loLogger):
         self.debug = debug
         self.log_obj = amun_logging.amun_logging("log_hpfeeds", loLogger)
-        if self.debug: self.log_obj.log("log-hpfeeds hpfeeds client init broker {0}:{1}, identifier {2}".format(server, port, ident), 12, "crit", Log=True, display=True)
+        if self.debug: self.log_obj.log("log-hpfeeds hpfeeds client init broker {0}:{1}, identifier {2}".format(server, port, ident), 12, "debug", Log=True, display=True)
         self.server, self.port = server, int(port)
         self.ident, self.secret = ident.encode('latin1'), secret.encode('latin1')
         self.unpacker = FeedUnpack()
         self.state = 'INIT'
-            
+
         self.connect()
         self.sendfiles = []
         self.filehandle = None
@@ -131,7 +129,7 @@ class hpclient(object):
         self.s = None
 
     def handle_established(self):
-        if self.debug: self.log_obj.log("log-hpfeeds hpclient established", 12, "crit", Log=True, display=True)
+        if self.debug: self.log_obj.log("log-hpfeeds hpclient established", 12, "debug", Log=True, display=True)
         while self.state != 'GOTINFO':
             self.read()
 
@@ -147,24 +145,24 @@ class hpclient(object):
             return
 
         if not d:
-            if self.debug: self.log_obj.log("log-hpfeeds hpclient connection closed?", 12, "crit", Log=True, display=True)
+            if self.debug: self.log_obj.log("log-hpfeeds hpclient connection closed?", 12, "debug", Log=True, display=True)
             self.close()
             return
 
         self.unpacker.feed(d)
         try:
             for opcode, data in self.unpacker:
-                if self.debug: self.log_obj.log("log-hpfeeds hpclient msg opcode {0} data {1}".format(opcode, data), 12, "crit", Log=True, display=True)
+                if self.debug: self.log_obj.log("log-hpfeeds hpclient msg opcode {0} data {1}".format(opcode, data), 12, "debug", Log=True, display=True)
                 if opcode == OP_INFO:
                     name, rand = strunpack8(data)
-                    if self.debug: self.log_obj.log("log-hpfeeds hpclient server name {0} rand {1}".format(name, rand), 12, "crit", Log=True, display=True)
+                    if self.debug: self.log_obj.log("log-hpfeeds hpclient server name {0} rand {1}".format(name, rand), 12, "debug", Log=True, display=True)
                     self.send(msgauth(rand, self.ident, self.secret))
                     self.state = 'GOTINFO'
 
                 elif opcode == OP_PUBLISH:
                     ident, data = strunpack8(data)
                     chan, data = strunpack8(data)
-                    if self.debug: self.log_obj.log("log-hpfeeds publish to {0} by {1}: {2}".format(chan, ident, data), 12, "crit", Log=True, display=True)
+                    if self.debug: self.log_obj.log("log-hpfeeds publish to {0} by {1}: {2}".format(chan, ident, data), 12, "debug", Log=True, display=True)
 
                 elif opcode == OP_ERROR:
                     self.log_obj.log("log-hpfeeds errormessage from server: {0}".format(data), 12, "crit", Log=True, display=True)
@@ -221,7 +219,7 @@ class log:
             self.secret = config.getSingleValue("secret")
             self.debug = int(config.getSingleValue("debug"))
             del config
-            
+
         except KeyboardInterrupt:
             raise
 
@@ -237,12 +235,13 @@ class log:
             self.log_obj = amun_logging.amun_logging("log_hpfeeds", loLogger)
             if self.connectClient(loLogger):
                 self.client.publish(AMUNCHAN,
+                    connectionType='initial',
                     attackerIP=attackerIP,
                     attackerPort=attackerPort,
                     victimIP=victimIP,
                     victimPort=victimPort
                 )
-                        
+
         except KeyboardInterrupt:
             raise
 
@@ -251,13 +250,14 @@ class log:
             self.log_obj = amun_logging.amun_logging("log_hpfeeds", loLogger)
             if self.connectClient(loLogger):
                 self.client.publish(AMUNCHAN,
+                    connectionType='exploit',
                     attackerIP=attackerIP,
                     attackerPort=attackerPort,
                     victimIP=victimIP,
                     victimPort=victimPort,
                     vulnName=vulnName, timestamp=timestamp, downloadMethod=downloadMethod, attackerID=attackerID, shellcodeName=shellcodeName
                 )
-                        
+
         except KeyboardInterrupt:
             raise
 
@@ -267,12 +267,13 @@ class log:
             self.log_obj = amun_logging.amun_logging("log_hpfeeds", loLogger)
             if self.connectClient(loLogger):
                 self.client.publish(AMUNCHAN,
+                    connectionType='submission',
                     attackerIP=attackerIP,
                     attackerPort=attackerPort,
                     victimIP=victimIP,
                     victimPort=victimPort,
                     downloadURL=downloadURL, md5hash=md5hash, data=data, filelength=filelength, downMethod=downMethod, vulnName=vulnName, fexists=fexists
                 )
-                        
+
         except KeyboardInterrupt:
             raise
