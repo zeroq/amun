@@ -219,7 +219,6 @@ class log:
             self.secret = config.getSingleValue("secret")
             self.debug = int(config.getSingleValue("debug"))
             del config
-
         except KeyboardInterrupt:
             raise
 
@@ -271,7 +270,6 @@ class log:
                     attackerIP=attackerIP,
                     attackerPort=attackerPort,
                     victimIP=victimIP,
-                    victimPort=victimPort,
                     downloadURL=downloadURL, md5hash=md5hash, data=data, filelength=filelength, downMethod=downMethod, vulnName=vulnName, fexists=fexists
                 )
 
