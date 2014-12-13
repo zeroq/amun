@@ -429,6 +429,7 @@ def check_for_succ_download_event(event_dict, suLogger, submit_modules, smLogger
 
             ### DIRTY FIX FOR INVALID LINKBOT DOWNLOAD
             if int(data_len)==380:
+                log("download skipped due to invalid size (linkbot fix)", 0, "normal", suLogger, False)
                 continue
 
             ### iterate over log modules that also log submission
