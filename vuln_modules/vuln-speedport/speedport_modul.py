@@ -17,7 +17,7 @@ except ImportError:
 
 import struct
 import random
-import analyzer_shellcodes
+import speedport_shellcodes
 
 import amun_logging
 
