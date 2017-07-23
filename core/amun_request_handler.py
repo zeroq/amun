@@ -444,8 +444,9 @@ class amun_reqhandler(asynchat.async_chat):
 						return
 			### check replies and take the first
 			try:
-				if len(result['replies'])>0:
-					reply_message = result['replies'][0]
+				#if len(result['replies'])>0:
+				for index in range(0, len(result['replies'])):
+					reply_message = result['replies'][index]
 					### calc reply message length
 					bytesTosend = len(reply_message)
 					try:
@@ -626,6 +627,7 @@ class amun_reqhandler(asynchat.async_chat):
 					result['stage_list'].append(vulnResult['stage'])
 					keysToRemove.append(key)
 				else:
+					#print "SHELLCODE --> %s" % len(vulnResult['shellcode'])
 					### if result true and we have a reply -> send reply
 					if vulnResult['result'] and vulnResult['reply']!="None":
 						if vulnResult['reply'].endswith('#'):

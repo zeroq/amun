@@ -64,7 +64,7 @@ class amun_smb_prot:
 		self.sess_mid0 = '\x00'
 		self.sess_mid1 = '\x00'
 		### session stuff
-		self.NUM_COUNT_ITEMS = None 
+		self.NUM_COUNT_ITEMS = None
 		self.CALL_ID = None
 		self.NTErrorCodes = True
 		### fragmentation
@@ -81,7 +81,7 @@ class amun_smb_prot:
 		### known windows pipes
 		self.knownPipes = ["LANMAN","srvsvc","samr","wkssvc","NETLOGON","ntlsa","ntsvcs","lsass","lsarpc","winreg","spoolss","netdfs","rpcecho","svcctl","eventlog","unixinfo"]
 		self.samr_data = "\x00\x00\x00\x01\x00\x00\x00\x00\x00\x50\xd2\x6f\x4e\xae\x4e\xd7\x11\xb3\x9d\x00\x05\x69\x9b\x01\x12\x00\x9b\x01\x12\x00\x00\x00"
-		self.svcctl_data = "\x0c\x00\x0c\x00\x66\x00\x00\x00\x10\x00\x10\x00\xa2\x00\x00\x00\x15\x82\x88\xe0\x53\x00\xff\x01\x1f\x00\x9b\x01\x12\x00\x31\x00" 
+		self.svcctl_data = "\x0c\x00\x0c\x00\x66\x00\x00\x00\x10\x00\x10\x00\xa2\x00\x00\x00\x15\x82\x88\xe0\x53\x00\xff\x01\x1f\x00\x9b\x01\x12\x00\x31\x00"
 		self.lsarpc_data = "\x06\x00\x06\x00\x40\x00\x00\x00\x10\x00\x10\x00\x47\x00\x00\x00\x15\x8a\x88\xe0\x48\x00\x9b\x01\x12\x00\x9b\x01\x12\x00\x7a\xf2"
 		self.other_data = "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x9b\x01\x12\x00\x9b\x01\x12\x00\x00\x00"
 		### netbios header (byte 3 und 4 bestimmen die smb length)
@@ -97,6 +97,7 @@ class amun_smb_prot:
 		### vulnName
 		self.vulnName = "SMB (Unknown)"
 		self.shellcode = []
+		self.trans2counter = 0
 
 	def genBitvector(self, integer, count=16):
 		return [str((integer >> y) & 1) for y in range(count-1, -1, -1)]
@@ -219,7 +220,9 @@ class amun_smb_prot:
 					return True, data
 				else:
 					return False, data
-		except:
+		except Exception as e:
+			if self.debug:
+				print e
 			return False, data
 		return False, data
 
@@ -254,12 +257,12 @@ class amun_smb_prot:
 		self.reply[self.SMB_ERRCODE1] = '\x00'
 
 		self.reply[self.SMB_FLAG] = '\x98'
-		self.reply[self.SMB_FLAG0] = '\x07'
-		self.reply[self.SMB_FLAG1] = '\xc8'
+		self.reply[self.SMB_FLAG0] = '\x01'
+		self.reply[self.SMB_FLAG1] = '\x28' #\xc8 - with extended security
 
 		self.reply[self.SMB_PID0] = message[self.SMB_PID0]
 		self.reply[self.SMB_PID1] = message[self.SMB_PID1]
-		
+
 		self.reply[self.SMB_MID0] = message[self.SMB_MID0]
 		self.reply[self.SMB_MID1] = message[self.SMB_MID1]
 
@@ -267,6 +270,8 @@ class amun_smb_prot:
 		self.reply.extend(fill)
 
 		### word count - \x11 = NT LM 0.12
+		### \x0d = LAN Manager
+		###
 		self.reply[self.SMB_WORDCOUNT] = "\x11"
 		###### parameter block
 		### dialect
@@ -279,7 +284,7 @@ class amun_smb_prot:
 		### securityMode
 		self.reply[39] = "\x03"
 		### max mpx count
-		self.reply[40] = "\x0a"
+		self.reply[40] = "\x32"
 		self.reply[41] = "\x00"
 		### max vcs
 		self.reply[42] = "\x01"
@@ -304,7 +309,7 @@ class amun_smb_prot:
 		self.reply[56] = "\xfd"
 		self.reply[57] = "\xe3"
 		self.reply[58] = "\x00"
-		self.reply[59] = "\x00"
+		self.reply[59] = "\x80"
 		### system time high
 		### generate time string
 		smbtime = struct.pack('Q' , ( (time.time()+11644473600)*10000000 ) )
@@ -365,7 +370,7 @@ class amun_smb_prot:
 		return
 
 	def emptyTransaction(self, message):
-		self.genSMBHeader(smbCommand="\x25", pid0=self.sess_pid0, pid1=self.sess_pid1, mid0=self.sess_mid0, mid1=self.sess_mid1, uid0='\x01', uid1='\x08', tree0='\x00', tree1='\x08')
+		self.genSMBHeader(smbCommand="\x25", err="\x05", errRes="\x02", err0="\x00", err1="\xc0", pid0=self.sess_pid0, pid1=self.sess_pid1, mid0=self.sess_mid0, mid1=self.sess_mid1, uid0='\x01', uid1='\x08', tree0='\x00', tree1='\x08')
 
 		fill = ['\x00'] * 96
 		self.reply.extend(fill)
@@ -483,7 +488,7 @@ class amun_smb_prot:
 		self.reply[105] = '\x00'
 		self.reply[106] = '\x00'
 		self.reply[107] = '\x00'
-		
+
 		### context
 		self.reply[108] = '\x00'
 		self.reply[109] = '\x00'
@@ -513,11 +518,11 @@ class amun_smb_prot:
 		pktlength = struct.pack('!H', (len(self.reply)-4))
 		self.reply[2:4] = pktlength
 		return
-	
+
 
 	def smbTransaction(self, message, callid):
 		self.genSMBHeader(smbCommand="\x25", pid0=self.sess_pid0, pid1=self.sess_pid1, mid0=self.sess_mid0, mid1=self.sess_mid1, uid0='\x01', uid1='\x08', tree0='\x00', tree1='\x08', flag='\x80', flag0='\x00', flag1='\x01')
-	
+
 		fill = ['\x00'] * 96
 		self.reply.extend(fill)
 
@@ -620,7 +625,7 @@ class amun_smb_prot:
 		self.reply[105] = '\x00'
 		self.reply[106] = '\x00'
 		self.reply[107] = '\x00'
-		
+
 		### context
 		self.reply[108] = '\x00'
 		self.reply[109] = '\x00'
@@ -656,7 +661,7 @@ class amun_smb_prot:
 		self.reply = []
 		self.reply.extend(list(self.net_header))
 		self.reply.extend(list(self.smb_header))
-		
+
 		self.reply[self.SMB_COMMAND] = "\x25"
 
 		self.reply[self.SMB_ERRCLASS] = "\x00"
@@ -665,7 +670,7 @@ class amun_smb_prot:
 		self.reply[self.SMB_FLAG] = '\x98'
 		self.reply[self.SMB_FLAG0] = "\x07"
 		self.reply[self.SMB_FLAG1] = "\xc8"
-		
+
 		self.reply[self.SMB_TREEID0] = "\x00"
 		self.reply[self.SMB_TREEID1] = "\x08"
 
@@ -677,7 +682,7 @@ class amun_smb_prot:
 
 		self.reply[self.SMB_MID0] = message[self.SMB_MID0]
 		self.reply[self.SMB_MID1] = message[self.SMB_MID1]
-	
+
 		fill = ['\x00'] * 220
 		self.reply.extend(fill)
 
@@ -845,7 +850,7 @@ class amun_smb_prot:
 		self.reply[163] = '\x63'
 		self.reply[164] = '\x65'
 		self.reply[165] = '\x00'
-		#### 
+		####
 		self.reply[166] = '\x52'
 		self.reply[167] = '\x8e'
 		### length
@@ -954,7 +959,7 @@ class amun_smb_prot:
 		### rhs length
 		self.reply[245] = '\x04'
 		self.reply[246] = '\x00'
-		### IP - 
+		### IP -
 		self.reply[247] = '\x00'
 		self.reply[248] = '\x00'
 		self.reply[249] = '\x00'
@@ -1010,7 +1015,7 @@ class amun_smb_prot:
 			ByteCountPosition = 37+lengthWordBlock
 			smbByteCount = message[ByteCountPosition:ByteCountPosition+2]
 			### check for padding byte
-			if message[ByteCountPosition+2:ByteCountPosition+5] != '\x05\x00\x0b' and message[ByteCountPosition+3:ByteCountPosition+6] == '\x05\x00\x0b': 
+			if message[ByteCountPosition+2:ByteCountPosition+5] != '\x05\x00\x0b' and message[ByteCountPosition+3:ByteCountPosition+6] == '\x05\x00\x0b':
 				if self.debug:
 					print "WriteAndX with Padding"
 					print "Byte Count: ",[smbByteCount]," - ",struct.unpack('H', smbByteCount)[0]
@@ -1168,7 +1173,7 @@ class amun_smb_prot:
 		self.reply = []
 		self.reply.extend(list(self.net_header))
 		self.reply.extend(list(self.smb_header))
-		
+
 		self.reply[self.SMB_COMMAND] = "\x2f"
 
 		self.reply[self.SMB_ERRCLASS] = "\x00"
@@ -1177,7 +1182,7 @@ class amun_smb_prot:
 		self.reply[self.SMB_FLAG] = '\x98'
 		self.reply[self.SMB_FLAG0] = "\x07"
 		self.reply[self.SMB_FLAG1] = "\xc8"
-		
+
 		self.reply[self.SMB_TREEID0] = "\x00"
 		self.reply[self.SMB_TREEID1] = "\x08"
 
@@ -1189,7 +1194,7 @@ class amun_smb_prot:
 
 		self.reply[self.SMB_MID0] = message[self.SMB_MID0]
 		self.reply[self.SMB_MID1] = message[self.SMB_MID1]
-		 
+
 		fill = ['\x00'] * 15
 		self.reply.extend(fill)
 
@@ -1268,7 +1273,7 @@ class amun_smb_prot:
 
 	def ReadAndXBrokenPipe(self, message):
 		self.genSMBHeader(smbCommand="\x2e", pid0=message[self.SMB_PID0], pid1=message[self.SMB_PID1], mid0=message[self.SMB_MID0], mid1=message[self.SMB_MID1], uid0='\x01', uid1='\x08', tree0=message[self.SMB_TREEID0], tree1=message[self.SMB_TREEID1], flag0='\x01', flag1='\x60', err='\x4b', errRes='\x01', err0='\x00', err1='\xc0')
-	
+
 		fill = ['\x00'] * 3
 		self.reply.extend(fill)
 
@@ -1343,7 +1348,7 @@ class amun_smb_prot:
 
 	def smbReadAndX2(self, message):
 		self.genSMBHeader(smbCommand="\x2e", pid0=message[self.SMB_PID0], pid1=message[self.SMB_PID1], mid0=message[self.SMB_MID0], mid1=message[self.SMB_MID1], uid0='\x01', uid1='\x08', tree0=message[self.SMB_TREEID0], tree1=message[self.SMB_TREEID1])
-	
+
 		fill = ['\x00'] * 27
 		self.reply.extend(fill)
 
@@ -1509,7 +1514,7 @@ class amun_smb_prot:
 			self.reply[107] = '\x00'
 			for i in range(self.num,1,-1):
 				self.reply.extend(list(self.read_data_contextitem))
-			self.reply.extend(list(self.read_last_data_contextitem)) 
+			self.reply.extend(list(self.read_last_data_contextitem))
 		elif self.pipe_fid.has_key('srvsvc'):
 			### scndry len
 			self.reply[88] = '\x0d'
@@ -1521,13 +1526,13 @@ class amun_smb_prot:
 			self.reply[93] = '\x50' # P
 			self.reply[94] = '\x45' # E
 			self.reply[95] = '\x5c' # \
-			self.reply[96] = '\x73' # s 
+			self.reply[96] = '\x73' # s
 			self.reply[97] = '\x72' # r
 			self.reply[98] = '\x76' # v
 			self.reply[99] = '\x73' # s
 			self.reply[100] = '\x76' # v
 			self.reply[101] = '\x63' # c
-			self.reply[102] = '\x00' # 
+			self.reply[102] = '\x00' #
 			self.reply[103] = '\x00'
 			###CTX_Items Anzahl
 			print "HERE -> [%s]" % (self.pipe_fid)
@@ -1537,7 +1542,7 @@ class amun_smb_prot:
 			self.reply[107] = '\x00'
 			for i in range(self.num,1,-1):
 				self.reply.extend(list(self.read_data_contextitem))
-			self.reply.extend(list(self.read_last_data_contextitem)) 
+			self.reply.extend(list(self.read_last_data_contextitem))
 		elif self.pipe_fid.has_key('samr'):
 			### scndry len
 			self.reply[88] = '\x0a'
@@ -1549,18 +1554,18 @@ class amun_smb_prot:
 			self.reply[93] = '\x50' # P
 			self.reply[94] = '\x45' # E
 			self.reply[95] = '\x5c' # \
-			self.reply[96] = '\x73' # s 
+			self.reply[96] = '\x73' # s
 			self.reply[97] = '\x61' # a
 			self.reply[98] = '\x6d' # m
 			self.reply[99] = '\x72' # r
 			###CTX_Items Anzahl
 			self.reply[100] = self.NUM_COUNT_ITEMS
-			self.reply[101] = '\x00' 
-			self.reply[102] = '\x00' 
+			self.reply[101] = '\x00'
+			self.reply[102] = '\x00'
 			self.reply[103] = '\x00'
 			for i in range(self.num,1,-1):
 				self.reply.extend(list(self.read_data_contextitem))
-			self.reply.extend(list(self.read_last_data_contextitem)) 
+			self.reply.extend(list(self.read_last_data_contextitem))
 		elif self.pipe_fid.has_key('svcctl'):
 			### scndry len
 			self.reply[88] = '\x0d'
@@ -1572,13 +1577,13 @@ class amun_smb_prot:
 			self.reply[93] = '\x50' # P
 			self.reply[94] = '\x45' # E
 			self.reply[95] = '\x5c' # \
-			self.reply[96] = '\x73' # s 
+			self.reply[96] = '\x73' # s
 			self.reply[97] = '\x76' # v
 			self.reply[98] = '\x63' # c
 			self.reply[99] = '\x63' # c
 			self.reply[100] = '\x74' # t
 			self.reply[101] = '\x6c' # l
-			self.reply[102] = '\x00' # 
+			self.reply[102] = '\x00' #
 			self.reply[103] = '\x00'
 			###CTX_Items Anzahl
 			self.reply[104] = self.NUM_COUNT_ITEMS
@@ -1587,7 +1592,7 @@ class amun_smb_prot:
 			self.reply[107] = '\x00'
 			for i in range(self.num,1,-1):
 				self.reply.extend(list(self.read_data_contextitem))
-			self.reply.extend(list(self.read_last_data_contextitem)) 
+			self.reply.extend(list(self.read_last_data_contextitem))
 		else:
 			### scndry len
 			self.reply[88] = '\x0e'
@@ -1599,7 +1604,7 @@ class amun_smb_prot:
 			self.reply[93] = '\x50' # P
 			self.reply[94] = '\x45' # E
 			self.reply[95] = '\x5c' # \
-			self.reply[96] = '\x62' # b 
+			self.reply[96] = '\x62' # b
 			self.reply[97] = '\x72' # r
 			self.reply[98] = '\x6f' # o
 			self.reply[99] = '\x77' # w
@@ -1614,8 +1619,8 @@ class amun_smb_prot:
 			self.reply[107] = '\x00'
 			for i in range(self.num,1,-1):
 				self.reply.extend(list(self.read_data_contextitem))
-			self.reply.extend(list(self.read_last_data_contextitem)) 
-		
+			self.reply.extend(list(self.read_last_data_contextitem))
+
 		bcc = struct.pack('H', (45 + (self.num*24)))
 		self.reply[61:63] = bcc
 		pktlength = struct.pack('!H', (len(self.reply)-4))
@@ -1626,7 +1631,7 @@ class amun_smb_prot:
 		self.reply = []
 		self.reply.extend(list(self.net_header))
 		self.reply.extend(list(self.smb_header))
-		
+
 		self.reply[self.SMB_COMMAND] = smbCommand
 
 		self.reply[self.SMB_ERRCLASS] = err
@@ -1640,7 +1645,7 @@ class amun_smb_prot:
 			self.reply[self.SMB_FLAG0] = '\xc8'
 		elif self.NTErrorCodes and flag0!=None:
 			self.reply[self.SMB_FLAG0] = flag0
-		
+
 		if self.NTErrorCodes and flag1==None:
 			self.reply[self.SMB_FLAG1] = '\x53'
 		elif self.NTErrorCodes and flag1!=None:
@@ -1655,8 +1660,8 @@ class amun_smb_prot:
 			self.reply[self.SMB_FLAG1] = '\x20'
 		elif not self.NTErrorCodes and flag1!=None:
 			self.reply[self.SMB_FLAG1] = flag1
-			
-		
+
+
 		self.reply[self.SMB_TREEID0] = tree0
 		self.reply[self.SMB_TREEID1] = tree1
 
@@ -1670,7 +1675,7 @@ class amun_smb_prot:
 		self.reply[self.SMB_MID1] = mid1
 
 		return
-	
+
 	def disectNegotiateRequest(self, message):
 		try:
 			multiplexID = 0
@@ -1781,7 +1786,7 @@ class amun_smb_prot:
 			self.genSMBHeader(smbCommand="\x2b", tree0=message[self.SMB_TREEID0], tree1=message[self.SMB_TREEID1], pid0=message[self.SMB_PID0], pid1=message[self.SMB_PID1], uid0=message[self.SMB_UID0], uid1=message[self.SMB_UID1], mid0=message[self.SMB_MID0], mid1=message[self.SMB_MID1])
 		except IndexError:
 			self.genSMBHeader(smbCommand="\x2b")
-	
+
 		fill = ['\x00'] * 5
 		self.reply.extend(fill)
 
@@ -1804,7 +1809,7 @@ class amun_smb_prot:
 		pktlength = struct.pack('!H', (len(self.reply)-4))
 		self.reply[2:4] = pktlength
 		return
-		
+
 	def TreeDisconnect(self, message):
 		self.genSMBHeader(smbCommand="\x71", pid0=message[self.SMB_PID0], pid1=message[self.SMB_PID1], uid0=message[self.SMB_UID0], uid1=message[self.SMB_UID1], mid0=message[self.SMB_MID0], mid1=message[self.SMB_MID1])
 
@@ -1960,7 +1965,7 @@ class amun_smb_prot:
 			name.append(item)
 			name.append('\x00')
 		return "".join(name)
-		
+
 
 	def SessionSetupAndX(self, message, ownIP):
 		ntlmsspNego, ntlmsspChallenge, NTLMSSP_NEGOTIATE_VERSION, NTLMSSP_NEGOTIATE_TARGET_INFO, NTLMSSP_REQUEST_TARGET = self.disectSetupAndX(message)
@@ -2068,7 +2073,7 @@ class amun_smb_prot:
 
 	def SessionSetupAndxNoCap(self, message):
 		self.genSMBHeader(smbCommand="\x73", pid0=message[self.SMB_PID0], pid1=message[self.SMB_PID1], mid0=message[self.SMB_MID0], mid1=message[self.SMB_MID1], uid0='\x01', uid1='\x08', tree0=message[self.SMB_TREEID0], tree1=message[self.SMB_TREEID1])
-		
+
 		fill = ['\x00'] * 9
 		self.reply.extend(fill)
 		### word count
@@ -2153,6 +2158,56 @@ class amun_smb_prot:
 			raise
 		return None
 
+	def NTTrans2Response(self, message):
+		self.genSMBHeader(smbCommand="\x33", err="\x0d", errRes="\x00", err1="\xc0", pid0=message[self.SMB_PID0], pid1=message[self.SMB_PID1], mid0=message[self.SMB_MID0], mid1=message[self.SMB_MID1], uid0='\x01', uid1='\x08', tree0='\x00', tree1='\x08')
+		fill = ['\x00'] * 9
+		self.reply.extend(fill)
+		### word count
+		self.reply[self.SMB_WORDCOUNT] = "\x00"
+		### andxcommand
+		self.reply[37] = "\x00"
+		self.reply[38] = "\xff"
+		### andx offset
+		self.reply[39] = "\x00"
+		self.reply[40] = "\xff"
+		### action
+		self.reply[41] = "\x00"
+		self.reply[42] = "\xff"
+		### byte count
+		self.reply[43] = "\x00"
+		self.reply[44] = "\xff"
+		fill = ['\xa0'] * 900
+		self.reply.extend(fill)
+		###
+		pktlength = struct.pack('!H', (len(self.reply)-4))
+		self.reply[2:4] = pktlength
+		return
+
+	def NTTransResponse(self, message):
+		self.genSMBHeader(smbCommand="\xa0", err="\x05", errRes="\x02", err1="\xc0", pid0=message[self.SMB_PID0], pid1=message[self.SMB_PID1], mid0=message[self.SMB_MID0], mid1=message[self.SMB_MID1], uid0='\x01', uid1='\x08', tree0='\x00', tree1='\x08')
+		fill = ['\x00'] * 9
+		self.reply.extend(fill)
+		### word count
+		self.reply[self.SMB_WORDCOUNT] = "\x00"
+		### andxcommand
+		self.reply[37] = "\x00"
+		self.reply[38] = "\x00"
+		### andx offset
+		self.reply[39] = "\x00"
+		self.reply[40] = "\x00"
+		### action
+		self.reply[41] = "\x00"
+		self.reply[42] = "\x00"
+		### byte count
+		self.reply[43] = "\x00"
+		self.reply[44] = "\x00"
+		fill = ['\x00'] * 9
+		self.reply.extend(fill)
+		###
+		pktlength = struct.pack('!H', (len(self.reply)-4))
+		self.reply[2:4] = pktlength
+		return
+
 	def TreeConnectAndX(self, message):
 		### disect message
 		ConnectToService = self.disectTreeAndx(message)
@@ -2162,7 +2217,6 @@ class amun_smb_prot:
 		self.sess_mid1 = message[self.SMB_MID1]
 		self.sess_pid0 = message[self.SMB_PID0]
 		self.sess_pid1 = message[self.SMB_PID1]
-
 
 		if self.NTErrorCodes:
 			fill = ['\x00'] * 17
@@ -2288,7 +2342,7 @@ class amun_smb_prot:
 		nameToOpen, createOptions, oversizedAndXOffset = self.disectNtCreateAndX(message)
 
 		self.genSMBHeader(smbCommand="\xa2", pid0=message[self.SMB_PID0], pid1=message[self.SMB_PID1], mid0=message[self.SMB_MID0], mid1=message[self.SMB_MID1], uid0='\x01', uid1='\x08', tree0=message[self.SMB_TREEID0], tree1=message[self.SMB_TREEID1])
-		
+
 		#if oversizedAndXOffset >= 57054:
 		#	fill = ['\x00'] * 3
 		#	self.reply.extend(fill)
@@ -2313,7 +2367,7 @@ class amun_smb_prot:
 			self.reply[41] = "\x00"
 			### fid
 			self.reply[42:44] = struct.pack('H', self.init_fid)
-			self.pipe_fid[nameToOpen] = self.init_fid 
+			self.pipe_fid[nameToOpen] = self.init_fid
 			self.init_fid += 1
 			### createAction
 			self.reply[44] = "\x01"
@@ -2630,7 +2684,7 @@ class amun_smb_prot:
 		self.reply[81] = "\x00"
 		### cancel count
 		self.reply[82] = "\x00"
-		### 
+		###
 		self.reply[83] = "\x00"
 		self.reply[84] = "\x00"
 		self.reply[85] = "\x00"
@@ -2652,7 +2706,7 @@ class amun_smb_prot:
 		self.reply[99] = "\x00"
 		self.reply[100] = "\x00"
 		self.reply[101] = "\x00"
-		###	
+		###
 		self.reply[102] = "\x00"
 		self.reply[103] = "\x00"
 		self.reply[104] = "\x00"
@@ -2737,7 +2791,7 @@ class amun_smb_prot:
 		self.reply[81] = "\x00"
 		### cancel count
 		self.reply[82] = "\x00"
-		### 
+		###
 		self.reply[83] = "\x00"
 		### pointer to info
 		### referent id
@@ -2762,7 +2816,7 @@ class amun_smb_prot:
 		self.reply[97] = "\x47"
 		self.reply[98] = "\x0a"
 		self.reply[99] = "\x00"
-		### referent id 
+		### referent id
 		self.reply[100] = "\x58"
 		self.reply[101] = "\x75"
 		self.reply[102] = "\x0a"
@@ -2907,7 +2961,7 @@ class amun_smb_prot:
 		self.reply[81] = "\x00"
 		### cancel count
 		self.reply[82] = "\x00"
-		### 
+		###
 		self.reply[83] = "\x00"
 		self.reply[84] = "\x00"
 		self.reply[85] = "\x00"
@@ -2929,7 +2983,7 @@ class amun_smb_prot:
 		self.reply[99] = "\x0c"
 		self.reply[100] = "\x29"
 		self.reply[101] = "\xe0"
-		###	
+		###
 		self.reply[102] = "\x69"
 		self.reply[103] = "\x22"
 		self.reply[104] = "\x00"
@@ -3161,9 +3215,14 @@ class amun_smb_prot:
 					print ">> received smb negotiate request", len(data)
 				multiplexID = self.disectNegotiateRequest(data)
 				dialectIndex = self.getsmbNegotInfo(data)
+				if self.debug:
+					print "MutliplexID: %s" % (multiplexID)
+					print "DialectIndex: %s" % (dialectIndex)
 				if multiplexID!=0:
 					self.NegotiationReply(data, dialectIndex)
 				else:
+					if self.debug:
+						print "Anonymous Negotiation Reply"
 					self.NegotiationReplyAnonymous(data, dialectIndex)
 				return "".join(self.reply), None
 			elif commandByte == '\x73':
@@ -3292,6 +3351,25 @@ class amun_smb_prot:
 					print ">> received logoff andx request", len(data)
 				self.LogOffAndX(data)
 				return "".join(self.reply), None
+			elif commandByte == '\xa0':
+				if self.showRequests:
+					print ">> received nt trans request", len(data)
+				self.NTTransResponse(data)
+				return "".join(self.reply), None
+			elif commandByte == '\x33':
+				self.trans2counter = 1
+				if self.showRequests:
+					print ">> received trans2 secondary request", len(data)
+				totalDataCount = struct.unpack('H', data[39:41])[0]
+				print "Trans2 Data Count: %s" % totalDataCount
+				print "Trans2 Counter: %s" % self.trans2counter
+				self.vulnName = 'MS17010 (EternalBlue)'
+				#if totalDataCount < 4000 or self.trans2counter >= 4:
+				#	print ">>>>>>>>>>>>>> sending INVALID RESPONSE"
+				self.NTTrans2Response(data)
+				#	self.vulnName = 'MS17010 (EternalBlue)'
+				return "".join(self.reply), 'shellcode'
+				#return None, 'noreply'
 			else:
 				print ">> Unknown SMB Request: %s (%s)" % ([commandByte], len(data))
 				return None, None
@@ -3299,6 +3377,11 @@ class amun_smb_prot:
 			if self.vulnName == "MS04007 (ASN1)":
 				self.shellcode.append(self.getContent(data))
 				return None, 'shellcode'
+			if self.vulnName == 'MS17010 (EternalBlue)':
+				self.trans2counter += 1
+				if self.trans2counter >=61:
+					self.NTTrans2Response(data)
+					return "".join(self.reply), 'shellcode'
 			if self.fragmentation:
 				if self.debug:
 					print ">> still in fragmentation mode"
@@ -3325,6 +3408,12 @@ class amun_smb_prot:
 						self.emptyWriteAndX(data)
 						return self.checkOperationNumber(opnumber, dataBlock)
 				return None, 'noreply'
-			print ">> no answer"
-			print [data]
-			return None, None
+			if self.debug:
+				print ">> no answer"
+				print self.trans2counter
+			#	print [data[:10]]
+				print self.vulnName
+			#if self.showRequests:
+			#	print [data]
+			self.shellcode.append(data)
+			return None, 'shellcode'

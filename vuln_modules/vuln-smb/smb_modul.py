@@ -113,7 +113,7 @@ class vuln:
 						resultSet['reply'] = "".join(self.reply)+'*'
 					elif code=='noreply' or code=='shellcode':
 						resultSet["reply"] = "None"
-			
+
 					if code=='shellcode':
 						self.vuln_name = self.smbHandler.getVulnName()
 						resultSet["vulnname"] = self.vuln_name
