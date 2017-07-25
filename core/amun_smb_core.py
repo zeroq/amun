@@ -3361,15 +3361,12 @@ class amun_smb_prot:
 				if self.showRequests:
 					print ">> received trans2 secondary request", len(data)
 				totalDataCount = struct.unpack('H', data[39:41])[0]
-				print "Trans2 Data Count: %s" % totalDataCount
-				print "Trans2 Counter: %s" % self.trans2counter
+                if self.debug:
+				    print ">> Trans2 Data Count: %s" % totalDataCount
+				    print ">> Trans2 Counter: %s" % self.trans2counter
 				self.vulnName = 'MS17010 (EternalBlue)'
-				#if totalDataCount < 4000 or self.trans2counter >= 4:
-				#	print ">>>>>>>>>>>>>> sending INVALID RESPONSE"
 				self.NTTrans2Response(data)
-				#	self.vulnName = 'MS17010 (EternalBlue)'
 				return "".join(self.reply), 'shellcode'
-				#return None, 'noreply'
 			else:
 				print ">> Unknown SMB Request: %s (%s)" % ([commandByte], len(data))
 				return None, None
