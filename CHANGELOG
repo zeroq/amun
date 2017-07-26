@@ -1,3 +1,7 @@
+Changes in v0.2.3
+    - code cleanup
+    - added support for EternalBlue vulnerability
+
 Changes in v0.2.2
 	- code cleanup
 	- bugfixes
