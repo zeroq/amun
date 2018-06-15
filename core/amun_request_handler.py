@@ -463,6 +463,7 @@ class amun_reqhandler(asynchat.async_chat):
 						self.connected = False
 						self.close()
 						return
+					break
 			except:
 				pass
 			### TODO: proxy unknown attack to high-interaction honeypot
