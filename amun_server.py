@@ -931,7 +931,7 @@ def runMain():
     ### Lower Priviliges
     if newUser!="root" and newGroup!="root":
         lowerPrivileges(newUser, newGroup)
-    log("ready for evil orders:", 0, "info", None, True)
+    log("ready for evil orders:", 0, "info", divLogger['amunServer'], True)
     while running:
         try:
             ### loop over open sockets
