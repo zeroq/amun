@@ -18,7 +18,7 @@ more sophisticated emulation and easier maintenance.
   * enable or disbale vulnerability modules as needed
 * start the Amun by issuing: `./amun_server`
 
-## Tipps and Trick
+## Tips and Tricks
 
 In case you encounter problems with too many open files due to a lot of attackers hitting your honeypot at the same time, the following settings can be adjusted:
 
